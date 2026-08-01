@@ -8,10 +8,10 @@
  */
 
 import { PLAYER_RADIUS, STANCE_HEIGHT } from '../constants.js';
-import { vec3, type Vec3 } from '../math.js';
+import { anglesToForward, v3set, vec3, type Vec3 } from '../math.js';
 import { Team } from '../types.js';
 import { BrushCollisionWorld } from '../collision/brush-collision.js';
-import { CollisionLayer, type QueryFilter } from '../collision/collision-types.js';
+import { CollisionLayer, createRaycastHit, type QueryFilter } from '../collision/collision-types.js';
 import type { MapDef } from './map-types.js';
 
 import { CROSSFIRE } from './maps/crossfire.js';
@@ -58,6 +58,21 @@ export function mapsForPlayerCount(count: number): MapDef[] {
 // ---------------------------------------------------------------------------
 
 const SPAWN_FILTER: QueryFilter = { layers: CollisionLayer.Movement };
+
+/**
+ * A spawning player must be able to see at least this far in the direction they
+ * are facing. Two metres is roughly "not immediately nose-to-wall" — enough to
+ * orient, without demanding an open sightline the map may not have.
+ */
+const MIN_SPAWN_SIGHTLINE = 2.0;
+
+/**
+ * Point lights a map may declare. Matches the lowest quality tier's budget, so
+ * every player sees the same map however their settings are configured.
+ */
+const MAX_MAP_LIGHTS = 16;
+
+const spawnRayScratch = createRaycastHit();
 
 function inBounds(p: Vec3, bounds: MapDef['bounds'], margin = 0): boolean {
   return (
@@ -154,6 +169,43 @@ export function validateMap(map: MapDef): string[] {
   }
 
   if (blockedSpawns > 5) errors.push(`${tag}: ...and ${blockedSpawns - 5} more blocked spawns`);
+
+  // --- spawn facing --------------------------------------------------------
+  // A spawn can be perfectly valid — flat ground, room to stand — and still be
+  // terrible, because it drops the player nose-first into a wall. That costs a
+  // second of disorientation at exactly the moment they are most vulnerable, so
+  // it is worth failing the map over.
+  let wallFacingSpawns = 0;
+  const sightFilter: QueryFilter = { layers: CollisionLayer.Sight };
+  const forward = vec3();
+  const eye = vec3();
+
+  for (const spawn of map.spawns) {
+    const groundY = collision.groundHeightAt(
+      spawn.position.x,
+      spawn.position.z,
+      spawn.position.y + 3,
+      12,
+    );
+    if (!Number.isFinite(groundY)) continue;
+
+    v3set(eye, spawn.position.x, groundY + 1.6, spawn.position.z);
+    anglesToForward(forward, spawn.yaw, 0);
+
+    const hit = collision.raycast(eye, forward, MIN_SPAWN_SIGHTLINE, sightFilter, spawnRayScratch);
+    if (hit.hit) {
+      wallFacingSpawns++;
+      if (wallFacingSpawns <= 4) {
+        errors.push(
+          `${tag}: spawn '${spawn.group}' at (${spawn.position.x.toFixed(1)}, ` +
+            `${spawn.position.z.toFixed(1)}) faces a wall ${hit.distance.toFixed(1)}m away`,
+        );
+      }
+    }
+  }
+  if (wallFacingSpawns > 4) {
+    errors.push(`${tag}: ...and ${wallFacingSpawns - 4} more spawns facing a wall`);
+  }
   if (floatingSpawns > 3) errors.push(`${tag}: ...and ${floatingSpawns - 3} more floating spawns`);
 
   // --- objectives ---------------------------------------------------------
@@ -238,6 +290,18 @@ export function validateMap(map: MapDef): string[] {
       errors.push(`${tag}: nav link has a non-positive cost`);
       break;
     }
+  }
+
+  // --- lighting ------------------------------------------------------------
+  const lightCount = map.lighting.lights?.length ?? 0;
+  if (lightCount > MAX_MAP_LIGHTS) {
+    errors.push(
+      `${tag}: declares ${lightCount} point lights, more than the ${MAX_MAP_LIGHTS} every ` +
+        `quality tier renders — lower tiers would see a materially darker map`,
+    );
+  }
+  if (map.lighting.ambientIntensity <= 0) {
+    errors.push(`${tag}: ambientIntensity must be positive or unlit surfaces render black`);
   }
 
   // --- geometry containment ------------------------------------------------

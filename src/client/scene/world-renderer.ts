@@ -54,11 +54,23 @@ export const DEFAULT_RENDER_SETTINGS: RenderSettings = {
   brightness: 1,
 };
 
+/**
+ * Quality tiers.
+ *
+ * `maxLights` is deliberately generous even at the bottom tier. Dropping a map's
+ * point lights makes its dark corners darker, and on a night map that is not a
+ * visual downgrade — it is a competitive one, because a player on Low literally
+ * cannot see into places a player on Ultra can. Shadow resolution and particle
+ * count are the levers that are safe to scale; illumination is not.
+ *
+ * Non-shadow-casting point lights are cheap: they are per-fragment arithmetic,
+ * not extra passes. The expensive setting here is `shadowMap`.
+ */
 const QUALITY: Record<QualityTier, { shadowMap: number; maxLights: number; particles: number; anisotropy: number }> = {
-  low: { shadowMap: 0, maxLights: 0, particles: 200, anisotropy: 1 },
-  medium: { shadowMap: 1024, maxLights: 4, particles: 800, anisotropy: 2 },
-  high: { shadowMap: 2048, maxLights: 8, particles: 2000, anisotropy: 4 },
-  ultra: { shadowMap: 4096, maxLights: 16, particles: 4000, anisotropy: 8 },
+  low: { shadowMap: 0, maxLights: 16, particles: 200, anisotropy: 1 },
+  medium: { shadowMap: 1024, maxLights: 16, particles: 800, anisotropy: 2 },
+  high: { shadowMap: 2048, maxLights: 24, particles: 2000, anisotropy: 4 },
+  ultra: { shadowMap: 4096, maxLights: 32, particles: 4000, anisotropy: 8 },
 };
 
 // ---------------------------------------------------------------------------
@@ -163,8 +175,15 @@ export class WorldRenderer {
     this.sun.intensity = L.sunIntensity;
     this.configureSunShadow(map);
 
-    this.ambient.color.setHex(L.skyTop);
-    this.ambient.groundColor.setHex(L.ambientColor);
+    // `ambientColor` is the LIGHT arriving from above; `skyTop` is only the
+    // colour of the sky gradient the player sees. Using skyTop here conflates
+    // the two, which happens to work on a daylight map with a bright sky and
+    // renders a night map completely black — the sky is the thing that is dark.
+    this.ambient.color.setHex(L.ambientColor);
+    // Bounce off the ground is the same light, dimmer and warmer-shifted.
+    _ambientGround.setHex(L.ambientColor);
+    _ambientGround.multiplyScalar(0.35);
+    this.ambient.groundColor.copy(_ambientGround);
     this.ambient.intensity = L.ambientIntensity;
 
     this.scene.fog = new THREE.Fog(L.fogColor, L.fogNear, L.fogFar);
@@ -323,6 +342,8 @@ export class WorldRenderer {
 // ---------------------------------------------------------------------------
 // Sky
 // ---------------------------------------------------------------------------
+
+const _ambientGround = new THREE.Color();
 
 const skyCache = new Map<string, THREE.Texture>();
 
@@ -916,10 +937,14 @@ class MuzzleFlash {
     }
     if (this.worldLife > 0) {
       this.worldLife -= dt;
-      this.light.intensity *= 1 - dt * 18;
+      // Exponential decay, never a `1 - dt * k` multiplier: past a 55 ms frame
+      // that factor goes negative, and a light with negative intensity SUBTRACTS
+      // illumination — it turns the surrounding scene black.
+      this.light.intensity = Math.max(0, this.light.intensity * Math.exp(-18 * dt));
       if (this.worldLife <= 0) {
         this.worldSprite.visible = false;
         this.light.visible = false;
+        this.light.intensity = 0;
       }
     }
   }

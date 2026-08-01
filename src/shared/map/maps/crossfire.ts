@@ -266,21 +266,21 @@ function buildSpawns(): SpawnPoint[] {
   return [
     // Allied home, south end, facing the fight.
     ...spawnCluster({ x: 0, z: 34 }, Team.Allies, 'allies_home', FACE_NORTH, 7, 3.0),
-    ...spawnCluster({ x: -28, z: 30 }, Team.Allies, 'allies_west', FACE_NORTH, 5, 2.8),
-    ...spawnCluster({ x: 31, z: 25 }, Team.Allies, 'allies_east', FACE_NORTH, 5, 2.8),
+    ...spawnCluster({ x: -28, z: 25 }, Team.Allies, 'allies_west', FACE_NORTH, 5, 2.8),
+    ...spawnCluster({ x: 33, z: 22 }, Team.Allies, 'allies_east', FACE_NORTH, 5, 2.8),
     // Forward spawns used once the Allies push past the midline.
     ...spawnCluster({ x: -30, z: 12 }, Team.Allies, 'allies_mid_west', FACE_NORTH, 4, 2.6),
     ...spawnCluster({ x: 30, z: 14 }, Team.Allies, 'allies_mid_east', FACE_NORTH, 4, 2.6),
 
     // Axis home, north end.
     ...spawnCluster({ x: 0, z: -34 }, Team.Axis, 'axis_home', FACE_SOUTH, 7, 3.0),
-    ...spawnCluster({ x: -29, z: -29 }, Team.Axis, 'axis_west', FACE_SOUTH, 5, 2.8),
-    ...spawnCluster({ x: 29, z: -28 }, Team.Axis, 'axis_east', FACE_SOUTH, 5, 2.8),
+    ...spawnCluster({ x: -29, z: -25 }, Team.Axis, 'axis_west', FACE_SOUTH, 5, 2.8),
+    ...spawnCluster({ x: 29, z: -24 }, Team.Axis, 'axis_east', FACE_SOUTH, 5, 2.8),
     ...spawnCluster({ x: -31, z: -12 }, Team.Axis, 'axis_mid_west', FACE_SOUTH, 4, 2.6),
     ...spawnCluster({ x: 34, z: -17 }, Team.Axis, 'axis_mid_east', FACE_SOUTH, 4, 2.6),
 
     // Neutral spawns for free-for-all, spread so nobody owns a corner.
-    ...spawnCluster({ x: -34, z: 0 }, Team.None, 'ffa_west', FACE_EAST, 4, 3.0),
+    ...spawnCluster({ x: -35, z: -2 }, Team.None, 'ffa_west', FACE_NORTH, 4, 3.0),
     ...spawnCluster({ x: 34, z: 20 }, Team.None, 'ffa_east', FACE_WEST, 4, 3.0),
     ...spawnCluster({ x: 0, z: 18 }, Team.None, 'ffa_mid_south', FACE_NORTH, 4, 3.0),
     ...spawnCluster({ x: 0, z: -18 }, Team.None, 'ffa_mid_north', FACE_SOUTH, 4, 3.0),
@@ -405,8 +405,11 @@ export const CROSSFIRE: MapDef = {
     sunDirection: vec3(0.42, -0.68, 0.6),
     sunColor: 0xd8dce4,
     sunIntensity: 3.0,
-    ambientColor: 0x8f9aa8,
-    ambientIntensity: 1.4,
+    ambientColor: 0x9aa6b4,
+    // Lifted specifically for the building interiors. They get no sun at all, so
+    // ambient is the only thing lighting a fight that happens indoors — and
+    // rooms you cannot see inside are rooms nobody uses.
+    ambientIntensity: 1.9,
     skyTop: 0x8b9db4,
     skyBottom: 0xc3cad2,
     fogColor: 0xb2bac4,
@@ -419,6 +422,10 @@ export const CROSSFIRE: MapDef = {
       { position: vec3(-4, 5.6, 8), color: 0xffe2b0, intensity: 8, distance: 16 },
       { position: vec3(19, 6.5, -4), color: 0xcfe0ff, intensity: 14, distance: 30 },
       { position: vec3(19, 6.5, -18), color: 0xcfe0ff, intensity: 10, distance: 24 },
+      // The west house row: three interiors that are otherwise pitch black.
+      { position: vec3(-18, 4.2, -22), color: 0xffe6c0, intensity: 12, distance: 16 },
+      { position: vec3(-18, 4.2, -6), color: 0xffe6c0, intensity: 12, distance: 16 },
+      { position: vec3(-18, 4.2, 14), color: 0xffe6c0, intensity: 12, distance: 16 },
     ],
   },
 

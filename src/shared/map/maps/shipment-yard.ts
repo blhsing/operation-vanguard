@@ -137,9 +137,9 @@ function buildSpawns(): SpawnPoint[] {
 
   const ring: Array<[number, number, number]> = [
     [-10.5, -10.5, FACE_N], [-5.0, -11.0, FACE_N], [0.0, -11.5, FACE_N], [5.0, -11.0, FACE_N], [10.5, -10.5, FACE_N],
-    [11.5, -5.0, FACE_W], [11.5, 0.0, FACE_W], [11.5, 5.0, FACE_W],
+    [11.5, -5.0, FACE_N], [11.5, 0.0, FACE_S], [11.5, 5.0, FACE_N],
     [10.5, 10.5, FACE_S], [5.0, 11.0, FACE_S], [0.0, 11.5, FACE_S], [-5.0, 11.0, FACE_S], [-10.5, 10.5, FACE_S],
-    [-11.5, 5.0, FACE_E], [-11.5, 0.0, FACE_E], [-11.5, -5.0, FACE_E],
+    [-11.5, 5.0, FACE_S], [-11.5, 0.0, FACE_N], [-11.5, -5.0, FACE_N],
   ];
 
   // Interior points, used when the ring is under pressure.
@@ -162,7 +162,7 @@ function buildSpawns(): SpawnPoint[] {
   // Top up each team so both comfortably clear the validator's minimum even
   // after any point is rejected for being blocked.
   const extra: Array<[number, number, number]> = [
-    [-8.0, -6.0, FACE_N], [9.0, 6.0, FACE_S], [-6.0, 9.5, FACE_S], [6.0, -9.5, FACE_N],
+    [-8.0, -5.2, FACE_E], [9.0, 6.0, FACE_S], [-6.0, 9.5, FACE_S], [6.0, -9.5, FACE_N],
     [-10.0, -2.0, FACE_E], [11.0, -1.2, FACE_W], [2.5, -5.8, FACE_N], [-2.5, 7.5, FACE_S],
   ];
   extra.forEach(([x, z, yaw], i) => {

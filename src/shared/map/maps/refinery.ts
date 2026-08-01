@@ -263,13 +263,13 @@ function buildSpawns(): SpawnPoint[] {
     ...spawnCluster(-30, 25, Team.Allies, 'allies_west', FACE_N, 5, 2.8),
     ...spawnCluster(32, 25, Team.Allies, 'allies_east', FACE_N, 5, 2.8),
     ...spawnCluster(-34, 18, Team.Allies, 'allies_mid_west', FACE_N, 4, 2.6),
-    ...spawnCluster(38, 12, Team.Allies, 'allies_mid_east', FACE_N, 4, 2.6),
+    ...spawnCluster(41, 17, Team.Allies, 'allies_mid_east', FACE_N, 4, 2.6),
 
     ...spawnCluster(-2, -35, Team.Axis, 'axis_home', FACE_S, 7, 3.0),
-    ...spawnCluster(-30, -29, Team.Axis, 'axis_west', FACE_S, 5, 2.8),
-    ...spawnCluster(30, -29, Team.Axis, 'axis_east', FACE_S, 5, 2.8),
+    ...spawnCluster(-29, -24, Team.Axis, 'axis_west', FACE_S, 5, 2.6),
+    ...spawnCluster(30, -25, Team.Axis, 'axis_east', FACE_S, 5, 2.8),
     ...spawnCluster(-36, -12, Team.Axis, 'axis_mid_west', FACE_S, 4, 2.6),
-    ...spawnCluster(41, -12, Team.Axis, 'axis_mid_east', FACE_S, 4, 2.6),
+    ...spawnCluster(41, -16, Team.Axis, 'axis_mid_east', FACE_S, 4, 2.6),
 
     ...spawnCluster(-40, 0, Team.None, 'ffa_west', FACE_E, 4, 3.0),
     ...spawnCluster(40, 24, Team.None, 'ffa_east', FACE_W, 4, 3.0),
@@ -387,32 +387,42 @@ export const REFINERY: MapDef = {
     // makes moving between them a decision.
     sunDirection: vec3(-0.3, -0.85, -0.45),
     sunColor: 0x8fa8d8,
-    sunIntensity: 0.55,
-    ambientColor: 0x2c3a4e,
-    ambientIntensity: 0.75,
-    skyTop: 0x0a1220,
-    skyBottom: 0x1c2a3c,
-    fogColor: 0x14202e,
-    fogNear: 30,
-    fogFar: 130,
-    exposure: 1.5,
+    sunIntensity: 1.3,
+    /**
+     * Moonlight fill, and the number this map lives or dies on.
+     *
+     * "Dark" has to mean *legible but disadvantaged*, not *blind*. An earlier
+     * pass had unlit ground at a luminance of 6/255, which is not atmosphere —
+     * it is a player who cannot see the floor. The lamps still carry the map;
+     * this only guarantees a floor to the darkness.
+     */
+    ambientColor: 0x6d84a4,
+    ambientIntensity: 3.2,
+    skyTop: 0x121d2e,
+    skyBottom: 0x27384c,
+    // Fog is lifted well above the sky so distance reads as haze rather than as
+    // a void the geometry vanishes into.
+    fogColor: 0x2a3a4e,
+    fogNear: 38,
+    fogFar: 150,
+    exposure: 1.65,
     lights: [
       // Tank farm.
-      { position: vec3(-8, 10.5, -16), color: 0xffb84d, intensity: 24, distance: 26 },
-      { position: vec3(-6, 11.5, 4), color: 0xffb84d, intensity: 24, distance: 28 },
-      { position: vec3(7, 9.5, 8), color: 0xffb84d, intensity: 20, distance: 24 },
-      { position: vec3(-10, 9, 24), color: 0xffb84d, intensity: 18, distance: 22 },
+      { position: vec3(-8, 10.5, -16), color: 0xffb84d, intensity: 34, distance: 34 },
+      { position: vec3(-6, 11.5, 4), color: 0xffb84d, intensity: 34, distance: 36 },
+      { position: vec3(7, 9.5, 8), color: 0xffb84d, intensity: 30, distance: 32 },
+      { position: vec3(-10, 9, 24), color: 0xffb84d, intensity: 28, distance: 30 },
       // Gantry and control building.
-      { position: vec3(20, 9.5, 4), color: 0xcfe0ff, intensity: 22, distance: 26 },
-      { position: vec3(28, 5.4, -8), color: 0xffd9a0, intensity: 16, distance: 20 },
-      { position: vec3(28, 5.4, 8), color: 0xffd9a0, intensity: 16, distance: 20 },
-      { position: vec3(34, 5.5, -10), color: 0xffb84d, intensity: 14, distance: 18 },
+      { position: vec3(20, 9.5, 4), color: 0xcfe0ff, intensity: 32, distance: 34 },
+      { position: vec3(28, 5.4, -8), color: 0xffd9a0, intensity: 24, distance: 28 },
+      { position: vec3(28, 5.4, 8), color: 0xffd9a0, intensity: 24, distance: 28 },
+      { position: vec3(34, 5.5, -10), color: 0xffb84d, intensity: 22, distance: 26 },
       // West alley — deliberately sparse, so it stays the dark route.
-      { position: vec3(-30, 4.5, -18), color: 0xffb84d, intensity: 13, distance: 16 },
-      { position: vec3(-30, 4.5, 8), color: 0xffb84d, intensity: 13, distance: 16 },
+      { position: vec3(-30, 4.5, -18), color: 0xffb84d, intensity: 20, distance: 24 },
+      { position: vec3(-30, 4.5, 8), color: 0xffb84d, intensity: 20, distance: 24 },
       // Spawn ends.
-      { position: vec3(0, 6, -32), color: 0xcfe0ff, intensity: 14, distance: 22 },
-      { position: vec3(0, 6, 32), color: 0xcfe0ff, intensity: 14, distance: 22 },
+      { position: vec3(0, 6, -32), color: 0xcfe0ff, intensity: 24, distance: 30 },
+      { position: vec3(0, 6, 32), color: 0xcfe0ff, intensity: 24, distance: 30 },
     ],
   },
 
