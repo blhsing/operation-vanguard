@@ -192,6 +192,8 @@ export interface PlayerState {
 
   // --- movement ------------------------------------------------------------
   stance: Stance;
+  /** Stance we are transitioning away from — the other end of stanceProgress. */
+  previousStance: Stance;
   /** Interpolates toward the target stance height for smooth crouch/prone. */
   stanceProgress: number;
   moveState: MoveState;
@@ -206,12 +208,29 @@ export interface PlayerState {
   tacSprintTime: number;
   tacSprintCooldown: number;
   jumpCooldown: number;
+  /** Remaining window in which a already-pressed jump will fire on landing. */
+  jumpBuffer: number;
+  /**
+   * Suppresses ground re-detection for a moment after a jump.
+   *
+   * Ground detection cannot use "is my vertical velocity positive?" as the test,
+   * because walking up a ramp also produces upward velocity — and a slope walk
+   * at sprint speed exceeds jump velocity, so the two are not separable by
+   * magnitude either. An explicit lockout is the only honest discriminator.
+   */
+  groundLockout: number;
   mantleTime: number;
   mantleDuration: number;
   mantleStart: Vec3;
   mantleEnd: Vec3;
   /** Seconds since the player stopped sprinting — gates firing (sprint-out time). */
   sprintOutTime: number;
+  /**
+   * Set by the movement controller on the tick sprinting ends. The weapon system
+   * consumes it to start the sprint-out timer, because only it knows the equipped
+   * weapon's sprint-out duration.
+   */
+  sprintOutPending: boolean;
 
   // --- combat --------------------------------------------------------------
   health: number;
