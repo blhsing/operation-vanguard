@@ -345,7 +345,10 @@ function tickTimers(player: PlayerState, dt: number): void {
   player.jumpCooldown = Math.max(0, player.jumpCooldown - dt);
   player.groundLockout = Math.max(0, player.groundLockout - dt);
   player.tacSprintCooldown = Math.max(0, player.tacSprintCooldown - dt);
-  player.sprintOutTime = Math.max(0, player.sprintOutTime - dt);
+  // sprintOutTime is deliberately NOT decremented here. The weapon system owns
+  // it: only that system knows the equipped weapon's sprint-out duration, and
+  // splitting set/decay across two systems means either can be run alone and
+  // silently produce a timer that never expires.
 
   if (player.onGround) {
     player.airTime = 0;

@@ -223,9 +223,15 @@ export function stepWeapon(
 
   if (canFire(player, state, def, worldTime, mods, rt)) {
     fire(player, state, def, worldTime, rng, rt, mods, _result);
-  } else {
-    updateTriggerState(player, input, rt, def);
   }
+
+  // Latch the trigger edge unconditionally, at the end of the tick.
+  //
+  // Doing this inside the firing branches leaves paths that never latch — most
+  // damagingly, releasing the trigger while the weapon is Ready falls straight
+  // through `fire()`'s early return, so `triggerWasDown` stays true forever and
+  // every semi-automatic and bolt-action weapon fires exactly once per life.
+  rt.triggerWasDown = player.triggerHeld;
 
   return _result;
 }
@@ -240,14 +246,19 @@ function handleSprintOut(
   mods: WeaponModifiers,
   dt: number,
 ): void {
-  void dt;
+  const duration = def.handling.sprintOutTime * mods.sprintOutMult;
+
   if (player.sprintOutPending) {
     player.sprintOutPending = false;
-    player.sprintOutTime = def.handling.sprintOutTime * mods.sprintOutMult;
+    player.sprintOutTime = duration;
   }
-  // While actually sprinting the weapon is down; the timer starts when you stop.
+
+  // While actually sprinting the weapon is down, so the timer is held at full;
+  // it only starts running once the player stops.
   if (player.moveState === MoveState.Sprint || player.moveState === MoveState.TacticalSprint) {
-    player.sprintOutTime = def.handling.sprintOutTime * mods.sprintOutMult;
+    player.sprintOutTime = duration;
+  } else {
+    player.sprintOutTime = Math.max(0, player.sprintOutTime - dt);
   }
 }
 
@@ -552,18 +563,6 @@ function canFire(
   return true;
 }
 
-function updateTriggerState(
-  player: PlayerState,
-  input: InputCommand,
-  rt: WeaponRuntime,
-  def: WeaponDef,
-): void {
-  void def;
-  const down = hasFlag(input.buttons, InputFlag.Fire);
-  player.triggerHeld = down;
-  rt.triggerWasDown = down;
-}
-
 function fire(
   player: PlayerState,
   state: WeaponState,
@@ -585,8 +584,6 @@ function fire(
 
   if (state.ammoInMag <= 0) {
     out.dryFire = true;
-    player.triggerHeld = false;
-    rt.triggerWasDown = true;
     return;
   }
 
@@ -646,8 +643,6 @@ function fire(
   if (def.fireMode === FireMode.BoltAction && def.traits.includes(WeaponTrait.Rechamber)) {
     state.nextFireTime = worldTime + interval;
   }
-
-  rt.triggerWasDown = true;
 }
 
 /**
@@ -678,12 +673,6 @@ function shouldFireThisTick(player: PlayerState, def: WeaponDef, rt: WeaponRunti
 /** Called by the sim before stepWeapon so the trigger edge is correct. */
 export function setTrigger(player: PlayerState, input: InputCommand): void {
   player.triggerHeld = hasFlag(input.buttons, InputFlag.Fire);
-}
-
-/** Called after stepWeapon to latch the trigger edge for the next tick. */
-export function latchTrigger(player: PlayerState): void {
-  const rt = runtimeFor(player.id);
-  rt.triggerWasDown = player.triggerHeld;
 }
 
 // ---------------------------------------------------------------------------

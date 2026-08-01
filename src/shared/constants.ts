@@ -242,11 +242,17 @@ export const MATCH = {
   outroDuration: 14,
   /** Killcam length. */
   killcamDuration: 4.0,
-  /** Seconds between death and respawn for standard modes. */
+  /**
+   * Seconds between death and respawn for standard modes.
+   *
+   * Deliberately flat. An earlier version escalated this with consecutive deaths
+   * as an anti-spawn-trap measure, which had it exactly backwards: it punished
+   * the player being trapped by keeping them dead longer, right when they were
+   * already having the worst time. Spawn-trapping is solved by the influence-map
+   * spawn selection in sim/spawn.ts, which is where the actual problem is.
+   */
   respawnDelay: 4.0,
-  /** Extra delay per consecutive death, to soften spawn-trapping death spirals. */
-  respawnDelayEscalation: 0.35,
-  maxRespawnDelay: 8.0,
+  maxRespawnDelay: 5.0,
 } as const;
 
 export const MAX_PLAYERS = 24;

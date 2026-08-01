@@ -336,13 +336,10 @@ export function resetSpawnContext(ctx: SpawnContext): void {
   ctx.groupWeights.clear();
 }
 
-/**
- * Respawn delay for a player, escalating with consecutive deaths so a player
- * caught in a spawn-trap death spiral gets progressively more time for the
- * situation to change.
- */
-export function respawnDelayFor(player: PlayerState, base: number, escalation: number, max: number): number {
-  return Math.min(max, base + player.deathStreak * escalation);
+/** Respawn delay for a player. Flat by design — see MATCH.respawnDelay. */
+export function respawnDelayFor(player: PlayerState, base: number, max: number): number {
+  void player;
+  return Math.min(max, base);
 }
 
 /** Distance from a player to the nearest living enemy — used by tests and AI. */
