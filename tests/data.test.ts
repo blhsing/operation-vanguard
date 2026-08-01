@@ -26,6 +26,7 @@ import {
   timeToKill,
 } from '../src/shared/data/weapon-types.js';
 import { MAPS, MAP_IDS, getMap, validateAllMaps, validateMap } from '../src/shared/map/index.js';
+import { ObjectiveKind } from '../src/shared/map/map-types.js';
 import { HEALTH, HIT_MULTIPLIER } from '../src/shared/constants.js';
 
 describe('arsenal', () => {
@@ -161,10 +162,10 @@ describe('maps', () => {
   it('supports the objective modes it claims to', () => {
     for (const id of MAP_IDS) {
       const map = getMap(id);
-      const kinds = new Set(map.objectives.map((o) => o.kind));
-      expect(kinds.has('dom_flag'), `${id} needs Domination flags`).toBe(true);
-      expect(kinds.has('bomb_site'), `${id} needs bomb sites`).toBe(true);
-      expect(kinds.has('hardpoint'), `${id} needs Hardpoint zones`).toBe(true);
+      const kinds = new Set<string>(map.objectives.map((o) => o.kind as string));
+      expect(kinds.has(ObjectiveKind.DominationFlag), `${id} needs Domination flags`).toBe(true);
+      expect(kinds.has(ObjectiveKind.BombSite), `${id} needs bomb sites`).toBe(true);
+      expect(kinds.has(ObjectiveKind.Hardpoint), `${id} needs Hardpoint zones`).toBe(true);
     }
   });
 
