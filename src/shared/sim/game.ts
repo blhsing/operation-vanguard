@@ -125,6 +125,16 @@ import {
 } from './objectives.js';
 import { setGroupWeights } from './spawn.js';
 import {
+  callKillstreak,
+  createKillstreakRuntime,
+  radarTimeRemaining,
+  resetKillstreakRuntime,
+  stepKillstreaks,
+  teamEffects,
+  hasRadar,
+  type KillstreakRuntime,
+} from './killstreak-runtime.js';
+import {
   addPlayer as addPlayerToWorld,
   allocEntityId,
   addTeamScore,
@@ -178,6 +188,7 @@ export class GameSimulation {
   readonly spawnCtx: SpawnContext;
   readonly friendlyFire: boolean;
   readonly objectives: ObjectiveState;
+  readonly killstreaks: KillstreakRuntime;
 
   /** Events produced this tick. Cleared at the start of every step. */
   private events: SimEvent[] = [];
@@ -194,6 +205,7 @@ export class GameSimulation {
     this.spawnCtx = createSpawnContext();
     this.friendlyFire = opts.friendlyFire ?? false;
     this.objectives = createObjectiveState(this.map, this.mode);
+    this.killstreaks = createKillstreakRuntime();
 
     this.world.match.phase = MatchPhase.Warmup;
     this.world.match.timeRemaining = MATCH.warmupDuration;
@@ -319,9 +331,88 @@ export class GameSimulation {
     this.stepProjectiles(dt);
     this.stepStatusEffects(dt);
     this.stepObjectiveMode(dt);
+    this.stepKillstreakRuntime(dt);
 
     this.world.rngState = this.rng.getState();
     return this.events;
+  }
+
+  /**
+   * Advance active killstreaks and apply what they did.
+   *
+   * Damage from a strike is routed through the same damagePlayer path as a
+   * bullet, so friendly fire rules, perks and scoring cannot diverge between a
+   * grenade and an airstrike.
+   */
+  private stepKillstreakRuntime(dt: number): void {
+    const result = stepKillstreaks(this.world, this.collision, this.killstreaks, dt, this.rng);
+
+    for (const event of result.events) {
+      (event as { tick: number }).tick = this.world.tick;
+      this.emit(event);
+    }
+
+    for (const boom of result.explosions) {
+      resolveExplosion(
+        this.world,
+        this.collision,
+        boom.position,
+        boom.radius,
+        boom.damage,
+        boom.owner,
+        this.friendlyFire,
+        _explosionTargets,
+      );
+      for (const target of _explosionTargets) {
+        this.damagePlayer(target.player, {
+          amount: target.damage,
+          attacker: boom.owner,
+          victim: target.player.id,
+          cause: DamageCause.Killstreak,
+          weaponId: 'killstreak',
+          location: 'chest',
+          position: v3clone(boom.position),
+          direction: v3clone(target.direction),
+          distance: target.distance,
+          ignoreArmor: false,
+        });
+      }
+      addDangerZone(this.spawnCtx, boom.position, boom.radius * 2.5, 8);
+    }
+
+    for (const hit of result.hits) {
+      const victim = this.world.players.get(hit.victim);
+      if (!victim) continue;
+      v3sub(_dmgDir, victim.position, hit.position);
+      v3normalize(_dmgDir, _dmgDir);
+      this.damagePlayer(victim, {
+        amount: hit.damage,
+        attacker: hit.attacker,
+        victim: victim.id,
+        cause: DamageCause.Killstreak,
+        weaponId: 'killstreak',
+        location: 'chest',
+        position: v3clone(victim.position),
+        direction: v3clone(_dmgDir),
+        distance: 0,
+        ignoreArmor: false,
+      });
+    }
+  }
+
+  /** Seconds of radar a team currently has, for the HUD's UAV sweep. */
+  radarTime(team: Team): number {
+    return radarTimeRemaining(this.killstreaks, team);
+  }
+
+  /** Whether a team's minimap reveals enemies right now. */
+  teamHasRadar(team: Team): boolean {
+    return hasRadar(this.killstreaks, team);
+  }
+
+  /** Whether a team's HUD is currently jammed by an EMP. */
+  teamIsJammed(team: Team): boolean {
+    return teamEffects(this.killstreaks, team).emp > 0;
   }
 
   /**
@@ -375,6 +466,7 @@ export class GameSimulation {
     this.world.match.round++;
     this.world.match.timeRemaining = this.mode.roundTime;
     resetRound(this.objectives, this.mode, this.world.match.round);
+    resetKillstreakRuntime(this.killstreaks);
 
     // Everyone comes back for the next round, wherever they fell.
     for (const player of this.world.players.values()) {
@@ -648,6 +740,29 @@ export class GameSimulation {
 
     // --- equipment --------------------------------------------------------
     this.handleEquipment(player, rt, input, dt);
+
+    // --- killstreaks ------------------------------------------------------
+    if (input.killstreakSlot >= 0 && live) {
+      const streakId = player.killstreakInventory[input.killstreakSlot];
+      if (streakId) {
+        const result = callKillstreak(
+          this.world,
+          this.collision,
+          this.killstreaks,
+          player,
+          streakId,
+          this.rng,
+        );
+        for (const event of result.events) {
+          (event as { tick: number }).tick = this.world.tick;
+          this.emit(event);
+        }
+        for (const entity of result.spawned) {
+          this.world.killstreakEntities.set(entity.id, entity);
+        }
+        if (result.endsMatch) this.endMatch(player.team);
+      }
+    }
 
     // --- health regen -----------------------------------------------------
     player.timeSinceDamage += dt;

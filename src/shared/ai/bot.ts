@@ -852,6 +852,15 @@ export class BotController {
     weapon: WeaponDef,
     input: InputCommand,
   ): void {
+    // Spend an earned killstreak. Bots deliberately hold it for a beat rather
+    // than firing it the instant it lands, so a streak arriving reads as a
+    // decision rather than as a scripted consequence of the previous kill.
+    if (player.killstreakInventory.length > 0 && brain.goal !== BotGoal.Engage) {
+      if (this.chance(brain, 0.35)) {
+        input.killstreakSlot = 0;
+      }
+    }
+
     const state = activeWeapon(player);
 
     // Reload when safe, or when empty regardless.

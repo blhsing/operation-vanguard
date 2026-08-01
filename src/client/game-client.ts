@@ -426,6 +426,9 @@ export class GameClient {
     const state = local ? activeWeapon(local) : undefined;
     const spread = state?.spread ?? 0;
 
+    // The minimap only reveals enemies when the team has earned it.
+    if (local) this.hud.setUav(this.sim.radarTime(local.team));
+
     this.hud.setScoreboardVisible(this.input.scoreboardHeld || this.state === 'match_end');
     this.hud.update(
       this.sim.world,
