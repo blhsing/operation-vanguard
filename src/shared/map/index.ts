@@ -15,9 +15,13 @@ import { CollisionLayer, type QueryFilter } from '../collision/collision-types.j
 import type { MapDef } from './map-types.js';
 
 import { CROSSFIRE } from './maps/crossfire.js';
+import { REFINERY } from './maps/refinery.js';
+import { SHIPMENT_YARD } from './maps/shipment-yard.js';
 
 export const MAPS: Record<string, MapDef> = {
   [CROSSFIRE.id]: CROSSFIRE,
+  [REFINERY.id]: REFINERY,
+  [SHIPMENT_YARD.id]: SHIPMENT_YARD,
 };
 
 export const MAP_IDS: string[] = Object.keys(MAPS);

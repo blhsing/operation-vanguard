@@ -21,6 +21,7 @@ import { NavGraph } from '../src/shared/ai/navigation.js';
 import { BotController, DIFFICULTIES } from '../src/shared/ai/bot.js';
 import { Rng } from '../src/shared/rng.js';
 import { v3distance } from '../src/shared/math.js';
+import { MAP_IDS } from '../src/shared/map/index.js';
 
 interface Harness {
   sim: GameSimulation;
@@ -297,6 +298,55 @@ describe('a live match', () => {
     // A 64Hz tick has 15.6ms. Simulation plus AI for 12 bots must leave the
     // overwhelming majority of that for rendering.
     expect(perTick, `${perTick.toFixed(2)}ms per tick`).toBeLessThan(4);
+  });
+});
+
+describe('every registered map', () => {
+  it('supports a real bot match without anyone breaking', () => {
+    for (const mapId of MAP_IDS) {
+      const sim = new GameSimulation({ mapId, modeId: 'tdm', seed: `map-${mapId}` });
+      const nav = new NavGraph(sim.map, sim.collision);
+      const bots = new BotController(sim, nav, new Rng(3));
+
+      // Small maps cannot hold a full lobby; scale to what the map declares.
+      const count = Math.min(8, sim.map.playerCount[1]);
+      for (let i = 0; i < count; i++) {
+        const p = sim.addPlayer({
+          name: `B${i}`,
+          team: i % 2 === 0 ? Team.Allies : Team.Axis,
+          isBot: true,
+          loadout: botLoadout('rifleman', i),
+        });
+        bots.register(p.id, 'rifleman', DIFFICULTIES.hardened!);
+      }
+
+      for (let i = 0; i < Math.round(30 / TICK_DT); i++) {
+        bots.update(TICK_DT);
+        sim.step(TICK_DT);
+      }
+
+      const players = Array.from(sim.world.players.values());
+      expect(players.length, `${mapId}`).toBe(count);
+      for (const p of players) {
+        expect(Number.isFinite(p.position.x), `${mapId}: ${p.name} x`).toBe(true);
+        expect(Number.isFinite(p.position.z), `${mapId}: ${p.name} z`).toBe(true);
+        expect(p.position.y, `${mapId}: ${p.name} fell out of the world`).toBeGreaterThan(
+          sim.map.bounds.min.y - 25,
+        );
+      }
+      // A 30s match on any map should produce at least some contact.
+      const shots = players.reduce((a, p) => a + p.deaths + p.kills, 0);
+      expect(shots, `${mapId} produced no combat at all`).toBeGreaterThan(0);
+    }
+  });
+
+  it('builds a connected navigation graph for every map', () => {
+    for (const mapId of MAP_IDS) {
+      const sim = new GameSimulation({ mapId, modeId: 'tdm' });
+      const nav = new NavGraph(sim.map, sim.collision);
+      expect(nav.size, `${mapId} node count`).toBeGreaterThan(30);
+      expect(nav.connectivity(), `${mapId} connectivity`).toBe(1);
+    }
   });
 });
 

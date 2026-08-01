@@ -28,6 +28,7 @@ import {
 import { MAPS, MAP_IDS, getMap, validateAllMaps, validateMap } from '../src/shared/map/index.js';
 import { ObjectiveKind } from '../src/shared/map/map-types.js';
 import { HEALTH, HIT_MULTIPLIER } from '../src/shared/constants.js';
+import { Team } from '../src/shared/types.js';
 
 describe('arsenal', () => {
   it('passes its own balance validation with zero violations', () => {
@@ -142,9 +143,33 @@ describe('maps', () => {
   it('has enough geometry to feel built rather than blocked out', () => {
     for (const id of MAP_IDS) {
       const map = getMap(id);
-      expect(map.brushes.length, `${id} brush count`).toBeGreaterThanOrEqual(100);
+
+      // Density, not a flat count. Shipment Yard is deliberately a 24 m square;
+      // holding it to the same brush count as a 90 m map would either fail a
+      // correct map or force padding it with clutter nobody asked for.
+      const area =
+        (map.bounds.max.x - map.bounds.min.x) * (map.bounds.max.z - map.bounds.min.z);
+      const metresPerBrush = area / Math.max(1, map.brushes.length);
+      expect(metresPerBrush, `${id} is too sparse (${metresPerBrush.toFixed(0)} m² per brush)`)
+        .toBeLessThan(60);
+
       expect(map.spawns.length, `${id} spawn count`).toBeGreaterThanOrEqual(30);
       expect(map.coverPoints.length, `${id} cover count`).toBeGreaterThanOrEqual(20);
+    }
+  });
+
+  it('gives both teams enough spawn points to avoid being trapped', () => {
+    for (const id of MAP_IDS) {
+      const map = getMap(id);
+      const allies = map.spawns.filter((s) => s.team === Team.Allies).length;
+      const axis = map.spawns.filter((s) => s.team === Team.Axis).length;
+      const ffa = map.spawns.filter((s) => s.team === Team.None).length;
+
+      expect(allies, `${id} Allied spawns`).toBeGreaterThanOrEqual(12);
+      expect(axis, `${id} Axis spawns`).toBeGreaterThanOrEqual(12);
+      expect(ffa, `${id} free-for-all spawns`).toBeGreaterThanOrEqual(8);
+      // Neither team may have a materially larger pool to draw from.
+      expect(Math.abs(allies - axis), `${id} spawn counts are lopsided`).toBeLessThanOrEqual(4);
     }
   });
 
