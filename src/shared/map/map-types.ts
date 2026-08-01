@@ -96,6 +96,15 @@ export interface MapLighting {
   /** Sun direction (points from the sun toward the scene). */
   sunDirection: Vec3;
   sunColor: number;
+  /**
+   * Light intensities are in three.js PHYSICAL units (the default since r155),
+   * not the legacy 0..1 range.
+   *
+   * A daylight exterior wants a sun around 2.5-3.5 and ambient around 1.2-1.6.
+   * Values under 1 look correct in isolation and then render the ground almost
+   * black once ACES tone mapping is applied — which is exactly the mistake this
+   * comment exists to prevent.
+   */
   sunIntensity: number;
   ambientColor: number;
   ambientIntensity: number;

@@ -68,6 +68,7 @@ import { getMode, type GameModeDef } from '../data/modes.js';
 import { getWeapon, tryGetWeapon } from '../data/weapons.js';
 import { WeaponClass, WeaponTrait, type WeaponDef } from '../data/weapon-types.js';
 import { getEquipment, type EquipmentDef } from '../data/equipment.js';
+import { KILLSTREAKS } from '../data/killstreaks.js';
 
 import {
   applyDamage,
@@ -1253,17 +1254,21 @@ const PROJECTILE_EFFECTS: Partial<Record<ProjectileKind, ProjectileEffect>> = {
   [ProjectileKind.ClaymoreProjectile]: { damage: 150, radius: 4.5, flash: 0, stun: 0 },
 };
 
-/** Killstreak costs, cached so the hot path doesn't touch the registry. */
-const KILLSTREAK_COSTS = new Map<string, { cost: number; scoreCost: number }>();
-
-/** Populated on first use to avoid a static import cycle with the data layer. */
-async function primeKillstreakCosts(): Promise<void> {
-  const { KILLSTREAKS } = await import('../data/killstreaks.js');
-  for (const [id, def] of Object.entries(KILLSTREAKS)) {
-    KILLSTREAK_COSTS.set(id, { cost: def.cost, scoreCost: def.scoreCost });
-  }
-}
-void primeKillstreakCosts();
+/**
+ * Killstreak costs, flattened once at module load so the per-tick check doesn't
+ * walk the registry.
+ *
+ * Built synchronously. An earlier version primed this from a dynamic import to
+ * "avoid a cycle" that does not exist — killstreaks.ts imports nothing from the
+ * simulation — and the async gap meant streaks could not be earned during the
+ * opening seconds of a match.
+ */
+const KILLSTREAK_COSTS = new Map<string, { cost: number; scoreCost: number }>(
+  Object.entries(KILLSTREAKS).map(([id, def]) => [
+    id,
+    { cost: def.cost, scoreCost: def.scoreCost },
+  ]),
+);
 
 /** Flash intensity, wrapping the combat helper with the collision world. */
 function computeFlashFor(

@@ -1,0 +1,1060 @@
+/*
+ * Operation Vanguard — interface styling.
+ *
+ * Design intent: a military-utility HUD that stays out of the way. Everything is
+ * high-contrast against arbitrary backgrounds (a HUD that vanishes against a
+ * bright wall is a bug, not a style), uses a single accent colour so the eye
+ * knows where to look, and animates only where the animation carries meaning.
+ *
+ * All sizes scale from --hud-scale so the whole interface can be resized as one.
+ */
+
+:root {
+  --accent: #ff7a29;
+  --accent-dim: #b8541c;
+  --friendly: #5ce65c;
+  --enemy: #ff3b30;
+  --ink: #e9eef4;
+  --ink-dim: #97a3b0;
+  --bg-0: #06080b;
+  --bg-1: #0d1116;
+  --bg-2: #161c23;
+  --edge: rgba(233, 238, 244, 0.14);
+  --hud-scale: 1;
+
+  --font-ui: 'Rajdhani', 'DIN Alternate', 'Roboto Condensed', system-ui, -apple-system, sans-serif;
+  --font-num: 'DIN Alternate', 'Roboto Mono', ui-monospace, 'SF Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-0);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  /* The game reads mouse movement directly; text selection would fight it. */
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+canvas#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: none;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Boot                                                                       */
+/* ------------------------------------------------------------------------- */
+
+#boot {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: radial-gradient(ellipse at center, #12181f 0%, #06080b 70%);
+  z-index: 100;
+}
+
+.boot-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  letter-spacing: 0.42em;
+}
+
+.boot-op {
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin-left: 0.42em;
+}
+
+.boot-title {
+  font-size: 54px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-left: 0.42em;
+  text-shadow: 0 0 26px rgba(255, 122, 41, 0.35);
+}
+
+.boot-bar {
+  width: 280px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+}
+
+.boot-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.boot-status {
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.boot-error {
+  color: var(--enemy);
+  max-width: 420px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------------------- */
+/* HUD                                                                        */
+/* ------------------------------------------------------------------------- */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  font-size: calc(16px * var(--hud-scale));
+}
+
+/* --- damage feedback ----------------------------------------------------- */
+
+.hud-vignette {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(160, 12, 12, 0) 42%,
+    rgba(160, 12, 12, 0.55) 78%,
+    rgba(120, 6, 6, 0.85) 100%
+  );
+  transition: opacity 0.12s ease-out;
+}
+
+.hud-lowhealth {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(200, 20, 20, 0) 50%,
+    rgba(200, 20, 20, 0.35) 100%
+  );
+}
+
+.hud-lowhealth.is-visible {
+  animation: lowhealth-pulse 1.15s ease-in-out infinite;
+}
+
+@keyframes lowhealth-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.hud-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 0.08s linear;
+}
+
+/* --- crosshair ----------------------------------------------------------- */
+
+.hud-crosshair {
+  --gap: 6px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transition: opacity 0.1s ease;
+}
+
+.hud-crosshair.is-hidden {
+  opacity: 0;
+}
+
+.hud-crosshair span {
+  position: absolute;
+  background: var(--ink);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
+}
+
+.hud-crosshair .ch-top,
+.hud-crosshair .ch-bottom {
+  width: 2px;
+  height: 7px;
+  left: -1px;
+}
+
+.hud-crosshair .ch-top {
+  top: calc(-1 * (var(--gap) + 7px));
+}
+.hud-crosshair .ch-bottom {
+  top: var(--gap);
+}
+
+.hud-crosshair .ch-left,
+.hud-crosshair .ch-right {
+  height: 2px;
+  width: 7px;
+  top: -1px;
+}
+
+.hud-crosshair .ch-left {
+  left: calc(-1 * (var(--gap) + 7px));
+}
+.hud-crosshair .ch-right {
+  left: var(--gap);
+}
+
+.hud-crosshair .ch-dot {
+  width: 2px;
+  height: 2px;
+  left: -1px;
+  top: -1px;
+  opacity: 0.85;
+}
+
+/* --- hitmarker ----------------------------------------------------------- */
+
+.hud-hitmarker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.hud-hitmarker span {
+  position: absolute;
+  width: 11px;
+  height: 2px;
+  background: #fff;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+  transform-origin: center;
+}
+
+.hud-hitmarker span:nth-child(1) {
+  transform: rotate(45deg) translate(9px, 0);
+}
+.hud-hitmarker span:nth-child(2) {
+  transform: rotate(-45deg) translate(9px, 0);
+}
+.hud-hitmarker span:nth-child(3) {
+  transform: rotate(135deg) translate(9px, 0);
+}
+.hud-hitmarker span:nth-child(4) {
+  transform: rotate(-135deg) translate(9px, 0);
+}
+
+.hud-hitmarker.is-visible {
+  opacity: 1;
+  animation: hitmarker-pop 0.32s ease-out;
+}
+
+/* A lethal hit reads red, a headshot reads gold — instant, wordless feedback. */
+.hud-hitmarker.is-lethal span {
+  background: var(--enemy);
+}
+
+.hud-hitmarker.is-headshot span {
+  background: #ffd23f;
+  height: 3px;
+}
+
+@keyframes hitmarker-pop {
+  0% {
+    transform: scale(0.55);
+    opacity: 1;
+  }
+  35% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* --- directional damage -------------------------------------------------- */
+
+.hud-damage-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+
+.hud-damage-wedge {
+  position: absolute;
+  left: -110px;
+  top: -110px;
+  width: 220px;
+  height: 220px;
+  transform-origin: center;
+  background: conic-gradient(
+    from 165deg,
+    rgba(255, 40, 30, 0) 0deg,
+    rgba(255, 60, 40, 0.75) 15deg,
+    rgba(255, 40, 30, 0) 30deg
+  );
+  mask: radial-gradient(circle, transparent 62%, #000 68%, #000 88%, transparent 92%);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 68%, #000 88%, transparent 92%);
+}
+
+/* --- top bar ------------------------------------------------------------- */
+
+.hud-top {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: 10px;
+}
+
+.hud-scorebar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: linear-gradient(180deg, rgba(6, 8, 11, 0.82), rgba(6, 8, 11, 0.45));
+  padding: 6px 22px 8px;
+  border-bottom: 1px solid var(--edge);
+  min-width: 300px;
+  justify-content: center;
+}
+
+.hud-score-allies,
+.hud-score-axis {
+  font-family: var(--font-num);
+  font-size: 1.55em;
+  font-weight: 700;
+  min-width: 2.2em;
+  text-align: center;
+}
+
+.hud-score-allies {
+  color: var(--friendly);
+}
+.hud-score-axis {
+  color: var(--enemy);
+}
+
+.hud-timerblock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+}
+
+.hud-timer {
+  font-family: var(--font-num);
+  font-size: 1.25em;
+  letter-spacing: 0.06em;
+}
+
+.hud-timer.is-urgent {
+  color: var(--enemy);
+  animation: urgent-blink 1s steps(2, end) infinite;
+}
+
+@keyframes urgent-blink {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.hud-mode {
+  font-size: 0.6em;
+  letter-spacing: 0.24em;
+  color: var(--ink-dim);
+}
+
+/* --- compass ------------------------------------------------------------- */
+
+.hud-compass {
+  position: relative;
+  width: 340px;
+  height: 20px;
+  overflow: hidden;
+  mask: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+}
+
+.hud-compass-strip {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  will-change: transform;
+}
+
+.hud-compass-strip .cm {
+  width: 44px;
+  flex: 0 0 44px;
+  text-align: center;
+  font-size: 0.62em;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  border-left: 1px solid rgba(233, 238, 244, 0.18);
+  height: 20px;
+  line-height: 20px;
+}
+
+.hud-compass-strip .cm-major {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.hud-compass-needle {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: var(--accent);
+  transform: translateX(-0.5px);
+}
+
+/* --- minimap ------------------------------------------------------------- */
+
+.hud-minimap {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: calc(190px * var(--hud-scale));
+  height: calc(190px * var(--hud-scale));
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--edge);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+}
+
+.hud-minimap-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* --- killfeed ------------------------------------------------------------ */
+
+.hud-killfeed {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  max-width: 40vw;
+}
+
+.hud-killfeed-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6, 8, 11, 0.62);
+  padding: 3px 9px;
+  font-size: 0.78em;
+  letter-spacing: 0.03em;
+  border-left: 2px solid transparent;
+  animation: killfeed-in 0.18s ease-out;
+  white-space: nowrap;
+}
+
+.hud-killfeed-entry.is-local {
+  border-left-color: var(--accent);
+  background: rgba(60, 26, 6, 0.72);
+}
+
+.kf-name.friendly {
+  color: var(--friendly);
+}
+.kf-name.enemy {
+  color: var(--enemy);
+}
+.kf-name.neutral {
+  color: var(--ink-dim);
+}
+.kf-weapon {
+  color: var(--ink-dim);
+  font-size: 0.9em;
+}
+
+@keyframes killfeed-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+/* --- score popups -------------------------------------------------------- */
+
+.hud-xp {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.hud-xp-entry {
+  font-family: var(--font-num);
+  font-size: 0.82em;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  animation: xp-rise 0.4s ease-out;
+}
+
+.hud-xp-entry.is-score {
+  color: var(--accent);
+}
+.hud-xp-entry.is-damage {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.72em;
+}
+
+@keyframes xp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* --- announcer ----------------------------------------------------------- */
+
+.hud-announce {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%);
+  font-size: 1.5em;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: var(--accent);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  text-align: center;
+}
+
+.hud-announce.is-visible {
+  opacity: 1;
+}
+
+/* --- bottom corners ------------------------------------------------------ */
+
+.hud-bottomright {
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  text-align: right;
+  line-height: 1.15;
+}
+
+.hud-weapon-name {
+  font-size: 0.82em;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.hud-weapon-name.is-reloading {
+  color: var(--accent);
+  animation: urgent-blink 0.7s steps(2, end) infinite;
+}
+
+.hud-ammo {
+  font-family: var(--font-num);
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.hud-ammo-current {
+  font-size: 2.5em;
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.hud-ammo-current.is-low {
+  color: #ffb545;
+}
+.hud-ammo-current.is-empty {
+  color: var(--enemy);
+}
+
+.hud-ammo-sep,
+.hud-ammo-reserve {
+  font-size: 1.15em;
+  color: var(--ink-dim);
+}
+
+.hud-firemode {
+  font-size: 0.62em;
+  letter-spacing: 0.2em;
+  color: var(--ink-dim);
+}
+
+.hud-equipment {
+  margin-top: 5px;
+  font-size: 0.85em;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+}
+
+.hud-bottomleft {
+  position: absolute;
+  left: 22px;
+  bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 220px;
+}
+
+.hud-health {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.hud-health-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--ink);
+  transition: width 0.14s ease-out;
+}
+
+.hud-health.is-regen .hud-health-fill {
+  background: var(--friendly);
+  box-shadow: 0 0 8px rgba(92, 230, 92, 0.6);
+}
+
+.hud-streaks {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hud-streak {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.7em;
+  letter-spacing: 0.12em;
+  background: rgba(6, 8, 11, 0.6);
+  padding: 3px 8px;
+  border-left: 2px solid var(--accent);
+}
+
+.hud-streak .key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--edge);
+  font-size: 0.85em;
+}
+
+/* --- respawn ------------------------------------------------------------- */
+
+.hud-respawn {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.hud-respawn.is-visible {
+  opacity: 1;
+}
+
+.respawn-label {
+  font-size: 0.8em;
+  letter-spacing: 0.28em;
+  color: var(--ink-dim);
+}
+
+.respawn-time {
+  font-family: var(--font-num);
+  font-size: 3em;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* --- scoreboard ---------------------------------------------------------- */
+
+.hud-scoreboard {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  gap: 20px;
+  background: rgba(6, 8, 11, 0.93);
+  border: 1px solid var(--edge);
+  padding: 22px 26px;
+  max-width: 92vw;
+  backdrop-filter: blur(4px);
+}
+
+.hud-scoreboard.is-visible {
+  display: flex;
+}
+
+.sb-team h3 {
+  margin: 0 0 8px;
+  font-size: 0.86em;
+  letter-spacing: 0.28em;
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+
+.sb-allies h3 {
+  color: var(--friendly);
+}
+.sb-axis h3 {
+  color: var(--enemy);
+}
+
+.hud-scoreboard table {
+  border-collapse: collapse;
+  font-size: 0.8em;
+  min-width: 340px;
+}
+
+.hud-scoreboard th {
+  text-align: right;
+  padding: 3px 9px;
+  font-size: 0.82em;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+  font-weight: 500;
+  border-bottom: 1px solid var(--edge);
+}
+
+.hud-scoreboard th.sb-name,
+.hud-scoreboard td.sb-name {
+  text-align: left;
+  min-width: 150px;
+}
+
+.hud-scoreboard td {
+  text-align: right;
+  padding: 3px 9px;
+  font-family: var(--font-num);
+}
+
+.hud-scoreboard tr.is-local {
+  background: rgba(255, 122, 41, 0.16);
+}
+
+.hud-scoreboard tr.is-dead {
+  opacity: 0.45;
+}
+
+.sb-bot {
+  font-size: 0.72em;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+  border: 1px solid var(--edge);
+  padding: 0 3px;
+}
+
+/* --- misc ---------------------------------------------------------------- */
+
+.hud-fps {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-family: var(--font-num);
+  font-size: 0.68em;
+  color: var(--ink-dim);
+  opacity: 0.75;
+}
+
+.hud-killcam {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  transform: translateX(-50%);
+  display: none;
+}
+
+.hud-killcam.is-visible {
+  display: block;
+}
+
+/* Colourblind palettes. Only the friend/foe pair needs remapping — it is the
+   one distinction the game makes that is load-bearing. */
+.hud[data-colorblind='protanopia'] {
+  --friendly: #4fc3f7;
+  --enemy: #ffd23f;
+}
+.hud[data-colorblind='deuteranopia'] {
+  --friendly: #56b4e9;
+  --enemy: #e69f00;
+}
+.hud[data-colorblind='tritanopia'] {
+  --friendly: #00c2a8;
+  --enemy: #ff5c8a;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Menus                                                                      */
+/* ------------------------------------------------------------------------- */
+
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background:
+    linear-gradient(180deg, rgba(6, 8, 11, 0.96), rgba(6, 8, 11, 0.99)),
+    radial-gradient(ellipse at 30% 20%, rgba(255, 122, 41, 0.09), transparent 60%);
+  cursor: default;
+  pointer-events: auto;
+  overflow: auto;
+}
+
+.menu[hidden] {
+  display: none;
+}
+
+.menu-header {
+  padding: 26px 40px 14px;
+  border-bottom: 1px solid var(--edge);
+}
+
+.menu-title {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  margin: 0;
+}
+
+.menu-subtitle {
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  color: var(--ink-dim);
+  margin: 4px 0 0;
+  text-transform: uppercase;
+}
+
+.menu-body {
+  flex: 1;
+  padding: 26px 40px;
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  gap: 34px;
+  align-content: start;
+}
+
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.menu-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--edge);
+  border-left: 3px solid transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease,
+    transform 0.12s ease;
+}
+
+.menu-btn:hover,
+.menu-btn:focus-visible {
+  background: rgba(255, 122, 41, 0.1);
+  border-left-color: var(--accent);
+  transform: translateX(3px);
+  outline: none;
+}
+
+.menu-btn.is-primary {
+  background: var(--accent);
+  color: #12080200;
+  color: #140a03;
+  font-weight: 700;
+  border-color: var(--accent);
+}
+
+.menu-btn.is-primary:hover {
+  background: #ff9147;
+}
+
+.menu-panel {
+  border: 1px solid var(--edge);
+  background: rgba(13, 17, 22, 0.6);
+  padding: 22px 26px;
+}
+
+.menu-panel h2 {
+  margin: 0 0 16px;
+  font-size: 15px;
+  letter-spacing: 0.24em;
+  color: var(--ink-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 200px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(233, 238, 244, 0.06);
+}
+
+.field:last-child {
+  border-bottom: none;
+}
+
+.field label {
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+}
+
+.field .hint {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+  margin-top: -4px;
+}
+
+.field input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.field select,
+.field input[type='text'] {
+  background: var(--bg-2);
+  border: 1px solid var(--edge);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  width: 100%;
+}
+
+.field input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.field .value {
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--ink-dim);
+  min-width: 48px;
+  text-align: right;
+}
+
+.menu-footer {
+  padding: 16px 40px 26px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  border-top: 1px solid var(--edge);
+}
+
+.menu-hintbar {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+  margin-right: auto;
+  align-self: center;
+  text-transform: uppercase;
+}
+
+/* Match-end summary */
+.result-banner {
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-align: center;
+  margin: 30px 0 8px;
+}
+
+.result-banner.victory {
+  color: var(--friendly);
+}
+.result-banner.defeat {
+  color: var(--enemy);
+}
+.result-banner.draw {
+  color: var(--ink-dim);
+}
+
+@media (max-width: 900px) {
+  .menu-body {
+    grid-template-columns: 1fr;
+  }
+  .field {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .hud-minimap {
+    width: 130px;
+    height: 130px;
+  }
+}

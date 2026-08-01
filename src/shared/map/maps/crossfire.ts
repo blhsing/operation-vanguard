@@ -404,15 +404,15 @@ export const CROSSFIRE: MapDef = {
     // map reads clearly rather than dramatically — this is the map people learn on.
     sunDirection: vec3(0.42, -0.68, 0.6),
     sunColor: 0xd8dce4,
-    sunIntensity: 1.35,
+    sunIntensity: 3.0,
     ambientColor: 0x8f9aa8,
-    ambientIntensity: 0.62,
+    ambientIntensity: 1.4,
     skyTop: 0x8b9db4,
     skyBottom: 0xc3cad2,
     fogColor: 0xb2bac4,
     fogNear: 60,
     fogFar: 190,
-    exposure: 1.0,
+    exposure: 1.35,
     lights: [
       { position: vec3(-4, 5.6, 0), color: 0xffe2b0, intensity: 8, distance: 16 },
       { position: vec3(4, 5.6, -8), color: 0xffe2b0, intensity: 8, distance: 16 },

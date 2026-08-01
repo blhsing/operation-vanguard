@@ -14,6 +14,7 @@
 
 import { ObjectiveKind } from '../map/map-types.js';
 import { WeaponClass } from './weapon-types.js';
+import { WEAPONS_BY_CLASS } from './weapons.js';
 
 export interface ModeScoring {
   kill: number;
@@ -435,13 +436,11 @@ const LADDER_PREFERENCES: WeaponClass[] = [
 /**
  * Resolve the ladder against the current arsenal.
  *
- * The weapons module is imported lazily inside the function body to avoid a
- * module cycle: weapons.ts has no reason to know about modes, but modes needs
- * the arsenal, and a static import here would make the cycle load-order
- * dependent.
+ * Synchronous: weapons.ts imports nothing from modes.ts, so there is no cycle
+ * to work around, and a mode definition that can only be read from an async
+ * context is a trap for every caller.
  */
-export async function gunGameLadder(): Promise<string[]> {
-  const { WEAPONS_BY_CLASS } = await import('./weapons.js');
+export function gunGameLadder(): string[] {
   return resolveLadder(WEAPONS_BY_CLASS);
 }
 

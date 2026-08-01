@@ -24,6 +24,7 @@ import type {
   PlaneBrush,
   RampBrush,
 } from '@shared/map/map-types.js';
+import type { SurfaceType } from '@shared/types.js';
 import {
   SURFACE_COLORS,
   SURFACE_METALNESS,
@@ -305,14 +306,14 @@ function brushGeometry(brush: Brush): THREE.BufferGeometry | null {
     geom = flat;
   }
 
-  applyVertexColor(geom, brush.color ?? SURFACE_COLORS[brush.surface]);
+  applyVertexColor(geom, brush.color ?? SURFACE_COLORS[brush.surface], brush.surface);
   return geom;
 }
 
 /**
  * Bake the brush tint into a vertex attribute.
  *
- * Map authors override `color` on almost every brush — crossfire alone uses 40
+ * Map authors override `color` on many brushes — crossfire alone uses 40
  * distinct tints — and colour on the material would mean 40 materials and 40
  * draw calls. As a vertex attribute it costs 12 bytes per vertex and collapses
  * every tint of a given surface into one batch.
@@ -321,15 +322,41 @@ function brushGeometry(brush: Brush): THREE.BufferGeometry | null {
  * `Material.color` does internally; skipping that step washes the map out.
  */
 const scratchColor = new THREE.Color();
+const scratchBase = new THREE.Color();
 
-function applyVertexColor(geom: THREE.BufferGeometry, hex: number): void {
+/**
+ * Write the per-brush tint as a vertex colour.
+ *
+ * The value stored is a RATIO against the surface's own colour, not the colour
+ * itself. The procedural surface texture already paints concrete concrete-grey
+ * and brick brick-red, and the shader multiplies map x vertexColor x
+ * material.color — so writing the absolute colour here multiplied the surface
+ * albedo by itself and dropped the whole map to roughly a fifth of its intended
+ * brightness. Every untinted brush now stores exactly white and comes through
+ * the shader unchanged; a brush that overrides `color` shifts its surface toward
+ * that colour.
+ *
+ * The division is done in linear space, which is where the shader multiplies.
+ */
+function applyVertexColor(geom: THREE.BufferGeometry, hex: number, surface: SurfaceType): void {
   scratchColor.setHex(hex, THREE.SRGBColorSpace);
-  const count = geom.attributes.position.count;
+  scratchBase.setHex(SURFACE_COLORS[surface], THREE.SRGBColorSpace);
+
+  // Guard against a black base surface, and cap the ratio so an extreme override
+  // can brighten a surface without blowing it out.
+  const ratio = (tint: number, base: number): number =>
+    Math.min(4, base > 1e-4 ? tint / base : 1);
+
+  const r = ratio(scratchColor.r, scratchBase.r);
+  const g = ratio(scratchColor.g, scratchBase.g);
+  const b = ratio(scratchColor.b, scratchBase.b);
+
+  const count = geom.getAttribute('position').count;
   const data = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
-    data[i * 3] = scratchColor.r;
-    data[i * 3 + 1] = scratchColor.g;
-    data[i * 3 + 2] = scratchColor.b;
+    data[i * 3] = r;
+    data[i * 3 + 1] = g;
+    data[i * 3 + 2] = b;
   }
   geom.setAttribute('color', new THREE.BufferAttribute(data, 3));
 }
