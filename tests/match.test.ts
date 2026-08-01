@@ -202,8 +202,12 @@ describe('a live match', () => {
     // The property that matters is that deaths turn back into lives. Counting
     // how many happen to be alive at one arbitrary instant measures the
     // firefight, not the respawn system.
+    //
+    // Every player spawned once to enter the match, plus once per death — minus
+    // those still counting down when the run stopped, who have not respawned yet.
     const spawns = countEvents(h.events, SimEventType.Spawn);
-    expect(spawns).toBeGreaterThanOrEqual(players.length + totalDeaths);
+    const deadNow = players.filter((p) => !p.alive).length;
+    expect(spawns).toBe(players.length + totalDeaths - deadNow);
 
     // And nobody is stuck dead: every corpse has a bounded countdown.
     for (const p of players) {

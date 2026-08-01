@@ -310,6 +310,13 @@ function resetRay(out: RaycastHit): RaycastHit {
 
 const CELL_SIZE = 4;
 
+/**
+ * Interpenetration below this depth counts as contact rather than overlap.
+ * Large enough to absorb the float error of a capsule snapped onto a surface,
+ * small enough that a real penetration is never mistaken for resting on it.
+ */
+const CONTACT_EPSILON = 1e-4;
+
 export class BrushCollisionWorld implements CollisionWorld {
   private readonly colliders: BrushCollider[] = [];
   private readonly bounds: { min: Vec3; max: Vec3 };
@@ -816,17 +823,23 @@ export class BrushCollisionWorld implements CollisionWorld {
     const ddz = lz - cz;
     const horizDistSq = ddx * ddx + ddz * ddz;
 
-    // Vertical separation if the segment is entirely above or below the box.
-    let vertGap = 0;
-    if (segBottom > boxTop) vertGap = segBottom - boxTop;
-    else if (segTop < boxBottom) vertGap = boxBottom - segTop;
+    // How deeply the capsule and the box interpenetrate vertically.
+    const yOverlap = Math.min(segTop, boxTop) - Math.max(segBottom, boxBottom);
 
-    if (vertGap > 0) {
-      // No vertical overlap: only the cap can touch, and only within radius.
+    if (yOverlap <= CONTACT_EPSILON) {
+      // Resting exactly on the surface, or entirely clear of it. This is NOT an
+      // overlap, and treating it as one is actively dangerous: with the feet
+      // level with the box top, the upward escape distance is zero, so the
+      // minimum-translation search picks the downward escape instead and shoves
+      // the player through the floor. A capsule that has actually sunk into a
+      // surface still reports yOverlap > 0 and depenetrates correctly.
+      const vertGap = Math.max(0, -yOverlap);
       if (horizDistSq + vertGap * vertGap > radius * radius) return false;
-    } else if (horizDistSq > radius * radius) {
+      if (mtv) v3set(mtv, 0, 0, 0);
       return false;
     }
+
+    if (horizDistSq > radius * radius) return false;
 
     // Ramp: reject anything above the sloped top face, and treat the plane as
     // the contact surface so the caller gets a walkable normal.
@@ -912,7 +925,10 @@ export class BrushCollisionWorld implements CollisionWorld {
     const segTop = position.y + height;
     const cylBottom = c.center.y - c.half.y;
     const cylTop = c.center.y + c.half.y;
-    if (segBottom > cylTop || segTop < cylBottom) return false;
+    // Same contact rule as boxes: touching is not overlapping.
+    if (Math.min(segTop, cylTop) - Math.max(segBottom, cylBottom) <= CONTACT_EPSILON) {
+      return false;
+    }
 
     const dx = position.x - c.center.x;
     const dz = position.z - c.center.z;

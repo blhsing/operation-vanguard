@@ -115,6 +115,16 @@ import {
   type ResolvedLoadout,
 } from './loadout.js';
 import {
+  createObjectiveState,
+  dropTag,
+  objectiveSummary,
+  resetRound,
+  respawnAllowed,
+  stepObjectives,
+  type ObjectiveState,
+} from './objectives.js';
+import { setGroupWeights } from './spawn.js';
+import {
   addPlayer as addPlayerToWorld,
   allocEntityId,
   addTeamScore,
@@ -167,6 +177,7 @@ export class GameSimulation {
   readonly rng: Rng;
   readonly spawnCtx: SpawnContext;
   readonly friendlyFire: boolean;
+  readonly objectives: ObjectiveState;
 
   /** Events produced this tick. Cleared at the start of every step. */
   private events: SimEvent[] = [];
@@ -182,6 +193,7 @@ export class GameSimulation {
     this.rng = new Rng(this.world.rngState);
     this.spawnCtx = createSpawnContext();
     this.friendlyFire = opts.friendlyFire ?? false;
+    this.objectives = createObjectiveState(this.map, this.mode);
 
     this.world.match.phase = MatchPhase.Warmup;
     this.world.match.timeRemaining = MATCH.warmupDuration;
@@ -306,9 +318,77 @@ export class GameSimulation {
 
     this.stepProjectiles(dt);
     this.stepStatusEffects(dt);
+    this.stepObjectiveMode(dt);
 
     this.world.rngState = this.rng.getState();
     return this.events;
+  }
+
+  /**
+   * Advance the objective mode and fold its results back into the world.
+   *
+   * The objective engine is kept deliberately pure — it reads the world and
+   * returns what should change — so the same code can later run server-side
+   * against a replicated world without reaching into anything it does not own.
+   */
+  private stepObjectiveMode(dt: number): void {
+    const result = stepObjectives(this.world, this.map, this.mode, this.objectives, dt);
+
+    for (const [team, amount] of result.teamScore) {
+      if (amount !== 0) addTeamScore(this.world, team, amount);
+    }
+
+    for (const award of result.playerScore) {
+      const player = this.world.players.get(award.player);
+      if (player) this.awardScore(player, award.amount, award.reason);
+    }
+
+    for (const event of result.events) {
+      (event as { tick: number }).tick = this.world.tick;
+      this.emit(event);
+    }
+
+    // Objective ownership decides which spawns are safe; this is what makes
+    // Domination spawns flip when a flag changes hands.
+    if (result.spawnWeights) setGroupWeights(this.spawnCtx, result.spawnWeights);
+
+    if (result.roundWinner !== null) this.endRound(result.roundWinner);
+  }
+
+  /** Award a round to a team in a round-based mode, or end the match. */
+  private endRound(winner: Team): void {
+    const entry = this.world.match.scores.find((s) => s.team === winner);
+    if (entry) entry.roundsWon++;
+
+    this.emit({
+      type: SimEventType.RoundEnd,
+      tick: this.world.tick,
+      team: winner,
+      data: { round: this.world.match.round },
+    });
+
+    if ((entry?.roundsWon ?? 0) >= this.mode.roundsToWin) {
+      this.endMatch(winner);
+      return;
+    }
+
+    this.world.match.round++;
+    this.world.match.timeRemaining = this.mode.roundTime;
+    resetRound(this.objectives, this.mode, this.world.match.round);
+
+    // Everyone comes back for the next round, wherever they fell.
+    for (const player of this.world.players.values()) {
+      const rt = this.runtimes.get(player.id);
+      if (!rt) continue;
+      rt.wantsRespawn = true;
+      player.respawnTimer = 0;
+      if (player.alive) killPlayer(player, 0);
+    }
+  }
+
+  /** Snapshot of objective state for the HUD. */
+  objectiveStatus(): ReturnType<typeof objectiveSummary> {
+    return objectiveSummary(this.objectives);
   }
 
   // -------------------------------------------------------------------------
@@ -419,6 +499,8 @@ export class GameSimulation {
     player.respawnTimer -= dt;
     if (player.respawnTimer > 0) return;
     if (!rt.wantsRespawn) return;
+    // Headquarters: the team holding the HQ does not respawn while they hold it.
+    if (!respawnAllowed(this.mode, this.objectives, player)) return;
 
     this.spawnPlayer(player, rt);
   }
@@ -1052,8 +1134,7 @@ export class GameSimulation {
       if (distance > 45) award += SCORE.longshotBonus;
       this.awardScore(killer, award, 'kill');
 
-      if (this.mode.teamBased && this.mode.scoreLimit > 0 && !this.mode.objectiveKind) {
-        // Team Deathmatch style: the team score is the kill count.
+      if (this.mode.teamScoresOnKill && this.mode.teamBased) {
         addTeamScore(this.world, killer.team, 1);
       }
 
@@ -1064,6 +1145,12 @@ export class GameSimulation {
           this.awardScore(assister, this.mode.scoring.assist, 'assist');
         }
       }
+    }
+
+    if (this.mode.id === 'kc') {
+      const lifetime =
+        typeof this.mode.params.tagLifetime === 'number' ? this.mode.params.tagLifetime : 30;
+      dropTag(this.objectives, victim, killerId, lifetime);
     }
 
     this.emit({

@@ -51,6 +51,15 @@ export interface GameModeDef {
   params: Record<string, number | boolean | string>;
   killstreaksEnabled: boolean;
   scorestreaksOnly: boolean;
+  /**
+   * Whether a kill directly adds a point to the team score.
+   *
+   * True for Team Deathmatch, false for everything that scores some other way.
+   * Kill Confirmed is the reason this is a field rather than "does the mode have
+   * objectives": it has no objective zones, but a kill is worth nothing to the
+   * team until somebody collects the tag.
+   */
+  teamScoresOnKill: boolean;
   teamSize: [number, number];
   introLine: string;
 }
@@ -90,6 +99,7 @@ const TEAM_DEATHMATCH: GameModeDef = {
   params: {},
   killstreaksEnabled: true,
   scorestreaksOnly: false,
+  teamScoresOnKill: true,
   teamSize: [4, 9],
   introLine: 'Eliminate the enemy team.',
 };
@@ -111,6 +121,7 @@ const FREE_FOR_ALL: GameModeDef = {
   params: {},
   killstreaksEnabled: true,
   scorestreaksOnly: false,
+  teamScoresOnKill: true,
   teamSize: [4, 12],
   introLine: 'Every player for themselves.',
 };
@@ -151,6 +162,7 @@ const DOMINATION: GameModeDef = {
   },
   killstreaksEnabled: true,
   scorestreaksOnly: false,
+  teamScoresOnKill: false,
   teamSize: [4, 12],
   introLine: 'Capture and hold the objectives.',
 };
@@ -187,6 +199,7 @@ const SEARCH_AND_DESTROY: GameModeDef = {
   // Scorestreaks only: with no respawns, kill-based streaks would compound an
   // already decisive advantage.
   scorestreaksOnly: true,
+  teamScoresOnKill: false,
   teamSize: [4, 6],
   introLine: 'Search and destroy. One life.',
 };
@@ -218,6 +231,7 @@ const KILL_CONFIRMED: GameModeDef = {
   },
   killstreaksEnabled: true,
   scorestreaksOnly: false,
+  teamScoresOnKill: false,
   teamSize: [4, 9],
   introLine: 'Collect the tags. Confirm your kills.',
 };
@@ -249,6 +263,7 @@ const HARDPOINT: GameModeDef = {
   },
   killstreaksEnabled: true,
   scorestreaksOnly: false,
+  teamScoresOnKill: false,
   teamSize: [4, 6],
   introLine: 'Secure the hardpoint.',
 };
@@ -283,6 +298,7 @@ const HEADQUARTERS: GameModeDef = {
   },
   killstreaksEnabled: true,
   scorestreaksOnly: false,
+  teamScoresOnKill: false,
   teamSize: [4, 9],
   introLine: 'Secure the headquarters.',
 };
@@ -309,6 +325,7 @@ const GUN_GAME: GameModeDef = {
   },
   killstreaksEnabled: false,
   scorestreaksOnly: false,
+  teamScoresOnKill: false,
   teamSize: [4, 12],
   introLine: 'Gun Game. Work the ladder.',
 };
@@ -345,6 +362,7 @@ const ZOMBIES: GameModeDef = {
   },
   killstreaksEnabled: false,
   scorestreaksOnly: false,
+  teamScoresOnKill: false,
   teamSize: [1, 4],
   introLine: 'Survive.',
 };
