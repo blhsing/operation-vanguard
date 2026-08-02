@@ -71,6 +71,18 @@ html = html.replace(/<link\b[^>]*rel="stylesheet"[^>]*>/g, (tag) =>
   tag.replace(/\scrossorigin(?:="[^"]*")?/g, ''),
 );
 
+/*
+ * LF, always, whatever platform built it.
+ *
+ * This folder is committed and CI proves it is current by rebuilding and
+ * diffing, so it has to be byte-identical everywhere. `index.html` is derived
+ * from a source file that carries the checkout's native line endings, so a
+ * Windows build wrote CRLF and a Linux one LF — and .gitattributes marks the
+ * folder `-text` precisely so git does *not* paper over that. The result was a
+ * check that passed on one platform and failed on the other, which is the worst
+ * way for it to be wrong. Normalise at the point of writing instead.
+ */
+html = html.replace(/\r\n/g, '\n');
 writeFileSync(INDEX, html, 'utf8');
 
 // --- refuse to ship something that only works over http ---------------------
@@ -119,6 +131,14 @@ if (!jsName) {
     new Function(js);
   } catch (e) {
     problems.push(`${jsName} does not parse: ${(e as Error).message}`);
+  }
+}
+
+// And nothing emitted may carry a carriage return, or the committed copy stops
+// being reproducible the moment somebody builds it on a different platform.
+for (const name of present) {
+  if (readFileSync(join(OUT, name), 'utf8').includes('\r')) {
+    problems.push(`${name} contains CRLF; the committed artefact must be LF everywhere`);
   }
 }
 
