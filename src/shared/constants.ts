@@ -305,8 +305,26 @@ export const PERCEPTION = {
 // ---------------------------------------------------------------------------
 
 export const NET = {
-  protocolVersion: 7,
+  protocolVersion: 8,
   defaultPort: 8790,
+  /**
+   * Snapshots per second.
+   *
+   * Deliberately a third of the tick rate. The simulation has to run at 64 Hz
+   * because that is what the movement and weapon timing were tuned against, but
+   * sending the world that often is bandwidth spent on frames the client is
+   * going to interpolate through anyway. Twenty is the classic figure and the
+   * one the interpolation delay below is sized for.
+   */
+  snapshotRate: 20,
+  /**
+   * How far behind the newest snapshot a client renders remote players.
+   *
+   * Two snapshot intervals. One is not enough — a single dropped or late packet
+   * leaves nothing to interpolate toward and remote players visibly stall — and
+   * three is just added latency for no extra protection.
+   */
+  interpolationDelay: 2 / 20,
   /** Drop a client that hasn't sent anything in this long. */
   timeoutSeconds: 20,
   heartbeatInterval: 3,

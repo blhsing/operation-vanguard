@@ -16,6 +16,7 @@
     "build:standalone": "tsc --noEmit && tsx tools/standalone.ts",
     "verify:standalone": "tsx tools/verify-standalone.ts",
     "check:i18n": "tsx tools/check-i18n.ts",
+    "verify:server": "tsx tools/verify-server.ts",
     "preview": "vite preview",
     "server": "tsx src/server/main.ts",
     "test": "vitest run",
