@@ -32,7 +32,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: standalone ? 'dist-standalone' : 'dist',
+    outDir: standalone ? 'offline' : 'dist',
     target: 'es2022',
     // A sourcemap is a second file, and the whole point is that there is only one.
     sourcemap: !standalone,

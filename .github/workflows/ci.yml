@@ -39,6 +39,21 @@ jobs:
       - name: Build
         run: npm run build
 
+      # `offline/` is a committed artefact so that cloning the repository is
+      # enough to play — no toolchain, no server, double-click index.html. A
+      # committed build goes stale the moment somebody forgets to regenerate it,
+      # and a stale one is worse than none because it looks current. The build is
+      # deterministic, so rebuilding and diffing is a complete check.
+      - name: Offline build is current
+        run: |
+          npm run build:standalone
+          if ! git diff --quiet -- offline; then
+            echo "::error::offline/ is out of date — run 'npm run build:standalone' and commit the result"
+            git diff --stat -- offline
+            exit 1
+          fi
+          echo "offline/ matches the source"
+
       - name: Report bundle size
         run: |
           echo "### Bundle" >> "$GITHUB_STEP_SUMMARY"

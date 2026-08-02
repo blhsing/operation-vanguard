@@ -93,18 +93,24 @@ npm run dev
 
 ### 完全不需要伺服器的執行方式
 
-```bash
-npm run build:standalone
-```
-
-會產生一個可以直接用 Chrome 從磁碟開啟的普通資料夾 — 不需要網頁伺服器、
-不需要安裝、不需要網路：
+**直接開啟 `offline/index.html` 就好。** 這份已建置好的版本就在版本庫裡，
+clone 或下載之後不需要安裝任何東西、不需要建置、也不需要伺服器：
 
 ```
-dist-standalone/
-  index.html      1 kB
+offline/
+  index.html      2 kB
   vanguard.css   18 kB
   vanguard.js   901 kB
+```
+
+> 注意：根目錄的 `index.html` **不是** 拿來直接開的。那是原始碼進入點，
+> 指向 TypeScript，必須由開發伺服器即時轉譯 — 直接用瀏覽器開它會被 CORS 擋下。
+> 它會偵測這種情況並顯示說明，而不是永遠停在啟動畫面。
+
+要自己重新建置這份離線版：
+
+```bash
+npm run build:standalone
 ```
 
 `file://` 有一條規則決定了這個結構。**模組**（module）指令碼是以 CORS 語意抓取的，
@@ -200,7 +206,8 @@ src/client/     所有負責呈現的部分
   audio/        程序化 Web Audio 合成
   hud/          HUD 與小地圖
 tests/          無畫面對戰、移動、武器與資料完整性測試
-tools/          soak 測試、導航／掩體報告、在地化守衛、standalone 驗證
+tools/          soak 測試、導航／掩體報告、在地化守衛、離線版與伺服器驗證
+offline/        已建置好的離線版本 — 直接開啟即可遊玩（由 CI 確保與原始碼同步）
 ```
 
 ## 設計筆記

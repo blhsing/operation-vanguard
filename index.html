@@ -21,6 +21,36 @@
         </div>
         <div class="boot-bar"><div class="boot-bar-fill" id="boot-progress"></div></div>
         <div class="boot-status" id="boot-status">引擎初始化中&hellip;</div>
+        <!-- SOURCE-ONLY:start -->
+        <script>
+          /*
+           * Opened straight off the disk? Say so, rather than spinning forever.
+           *
+           * This file is the *source* entry: it points at TypeScript that only a
+           * dev server can transform, so from a file:// origin the module script
+           * is blocked by CORS and the boot screen below sits at "初始化中" for
+           * ever with one line in a console nobody has open. It is also the most
+           * obvious file in the repository to double-click.
+           *
+           * The playable offline copy is committed at offline/index.html. The
+           * guard keys off the module script, which the offline build strips —
+           * so this never fires there, and never fires over http either.
+           */
+          if (
+            location.protocol === 'file:' &&
+            document.querySelector('script[type="module"]')
+          ) {
+            document.getElementById('boot').innerHTML =
+              '<div class="boot-error">' +
+              '<p><strong>這是原始碼進入點，不能直接開啟。</strong></p>' +
+              '<p>它指向的是 TypeScript，需要開發伺服器即時轉譯。</p>' +
+              '<p>要直接離線遊玩，請開啟 <code>offline/index.html</code> — ' +
+              '那份是已建置好的版本，不需要伺服器。</p>' +
+              '<p>要開發，請執行 <code>npm run dev</code>。</p>' +
+              '</div>';
+          }
+        </script>
+        <!-- SOURCE-ONLY:end -->
         <noscript>
           <p class="boot-error">
             「先鋒行動」需要JavaScript，請啟用後重新載入。

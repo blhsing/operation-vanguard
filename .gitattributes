@@ -2,3 +2,12 @@
 *.png binary
 *.jpg binary
 *.ico binary
+
+# The offline build is a byte-exact artefact, not source.
+#
+# CI proves it is current by rebuilding and diffing, which only works if git
+# stores exactly what the build wrote. Left alone, git would normalise line
+# endings on the way in and hand them back differently on a Windows checkout —
+# so the check would fail for everyone on Windows and nobody on Linux, which is
+# the worst possible way for it to be wrong.
+offline/** -text

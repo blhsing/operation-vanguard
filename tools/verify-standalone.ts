@@ -29,7 +29,7 @@ const CHROME_CANDIDATES = [
 const chrome = CHROME_CANDIDATES.find((p) => existsSync(p));
 if (!chrome) throw new Error('no Chrome found; set one of the paths in this file');
 
-const file = resolve('dist-standalone/index.html');
+const file = resolve('offline/index.html');
 if (!existsSync(file)) throw new Error('build it first: npm run build:standalone');
 
 const profile = resolve('.verify/cdp');

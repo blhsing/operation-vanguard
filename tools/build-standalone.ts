@@ -21,13 +21,36 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const OUT = 'dist-standalone';
+const OUT = 'offline';
 const INDEX = join(OUT, 'index.html');
 
 let html = readFileSync(INDEX, 'utf8');
 
-// `type="module"` and `crossorigin` both have to go; the src stays exactly as it
-// is, because a relative path is the one thing that works everywhere.
+/*
+ * Drop the source-entry guard.
+ *
+ * The repository's index.html carries a small script that explains itself when
+ * somebody double-clicks it, because it points at TypeScript and cannot run off
+ * the disk. This *is* the copy that runs off the disk, so that block is dead
+ * weight — and dead weight that would fire if anyone ever changed the condition
+ * it keys off.
+ *
+ * Sliced rather than matched. The block contains a regular expression and a pile
+ * of quoted markup, and a pattern that has to survive both is a pattern nobody
+ * will dare touch later.
+ */
+const GUARD_START = '<!-- SOURCE-ONLY:start -->';
+const GUARD_END = '<!-- SOURCE-ONLY:end -->';
+for (;;) {
+  const from = html.indexOf(GUARD_START);
+  if (from < 0) break;
+  const to = html.indexOf(GUARD_END, from);
+  if (to < 0) throw new Error('unterminated SOURCE-ONLY block in index.html');
+  const before = html.slice(0, from).replace(/[ \t]*$/, '');
+  const after = html.slice(to + GUARD_END.length).replace(/^[ \t]*\r?\n/, '');
+  html = before + after;
+}
+
 /*
  * `defer` is not optional here, and its absence is the trap.
  *
@@ -55,6 +78,7 @@ writeFileSync(INDEX, html, 'utf8');
 const problems: string[] = [];
 
 if (/<script[^>]*type="module"/.test(html)) problems.push('the entry is still a module script');
+if (html.includes('SOURCE-ONLY')) problems.push('the source-entry guard was not stripped');
 if (/crossorigin/.test(html)) problems.push('a crossorigin attribute survived, which forces CORS');
 
 // A classic script above <body> runs before the DOM it needs exists.

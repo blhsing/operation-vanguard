@@ -16,6 +16,8 @@ coverage/
 !.env.example
 stats.html
 
-# Standalone single-file build and its verification artefacts.
-dist-standalone/
+# Verification scratch. The offline/ build is deliberately NOT ignored: it is a
+# committed artefact so that a clone can be played without a toolchain, and CI
+# fails if it drifts from what the source produces.
 .verify/
+dist-standalone/
