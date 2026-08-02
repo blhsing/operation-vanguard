@@ -51,6 +51,7 @@ import {
   hasZombiesLayout,
 } from '@shared/zombies/index.js';
 
+import { NetClient } from './net/net-client.js';
 import { InputManager, type InputSettings } from './input.js';
 import { CameraShake, WorldRenderer, type RenderSettings } from './scene/world-renderer.js';
 import { ViewmodelRig } from './scene/viewmodel.js';
@@ -68,6 +69,8 @@ export interface MatchConfig {
   seed?: string;
   /** Which campaign mission to play. Only read when modeId is 'campaign'. */
   missionId?: string;
+  /** Set to join a dedicated server instead of playing against local bots. */
+  serverUrl?: string;
 }
 
 export interface ClientSettings {
@@ -99,6 +102,8 @@ export class GameClient {
   readonly zombies: ZombiesDirector | null = null;
   /** Present only in the Campaign. Owns the objective graph, the squad and the checkpoint. */
   readonly campaign: CampaignDirector | null = null;
+  /** Present only online. Owns the socket, prediction and interpolation. */
+  readonly net: NetClient | null = null;
 
   localId: PlayerId = 0;
   state: ClientState = 'loading';
@@ -127,7 +132,7 @@ export class GameClient {
   constructor(
     canvas: HTMLCanvasElement,
     hudContainer: HTMLElement,
-    config: MatchConfig,
+    private readonly config: MatchConfig,
     settings: ClientSettings,
   ) {
     this.settings = settings;
@@ -177,6 +182,15 @@ export class GameClient {
       );
     }
 
+    if (config.serverUrl) {
+      this.net = new NetClient({
+        url: config.serverUrl,
+        name: config.playerName,
+        loadout: config.loadout,
+        collision: this.sim.collision,
+      });
+    }
+
     this.populate(config);
 
     window.addEventListener('resize', this.onResize);
@@ -196,6 +210,11 @@ export class GameClient {
 
     // The campaign director owns the squad and the opposition; all it needs from
     // here is the player.
+    // Online: the server owns the roster. Nothing is added locally — the local
+    // player arrives in the first snapshot with the id the welcome named, and
+    // everyone else appears as they are seen.
+    if (this.net) return;
+
     if (this.campaign) {
       const local = this.sim.addPlayer({
         name: config.playerName,
@@ -325,8 +344,104 @@ export class GameClient {
     this.renderer.render();
   };
 
+  /**
+   * One fixed step of an online match.
+   *
+   * Nothing here advances the simulation: the server does that. The local player
+   * is predicted so that pressing forward moves you on the frame you pressed it,
+   * everyone else is written in from an interpolated snapshot, and the events
+   * that drive the HUD and the audio come off the wire rather than out of a
+   * local step.
+   */
+  private tickOnline(net: NetClient): void {
+    // The local id is not known until the welcome lands, and until it does there
+    // is nobody to predict. Adopting it here rather than guessing at construction
+    // is what keeps `applySnapshot` from treating us as just another remote and
+    // overwriting the prediction with a fifth-of-a-second-old copy of ourselves.
+    if (net.localId !== 0 && this.localId !== net.localId) {
+      this.localId = net.localId;
+      if (!this.sim.world.players.has(net.localId)) {
+        const me = this.sim.addPlayer({
+          name: this.config.playerName,
+          team: Team.None,
+          loadout: this.config.loadout,
+          id: net.localId,
+        });
+        me.alive = true;
+      }
+    }
+
+    const local = this.sim.world.players.get(this.localId);
+    const cmd = this.input.poll(TICK_DT, local?.adsProgress ?? 0);
+
+    if (local && !local.alive && (cmd.buttons & InputFlag.Fire) !== 0) {
+      net.requestRespawn();
+    }
+
+    net.tick(local, cmd);
+    net.reconcile(local);
+    this.applySnapshot(net);
+    this.consumeEvents(net.drainEvents());
+  }
+
+  /**
+   * Write the server's view of everyone else into the local world.
+   *
+   * The renderer, the HUD and the minimap all read `sim.world.players`, so the
+   * cheapest correct thing is to keep populating it — remote players simply get
+   * their transforms assigned rather than simulated. The local player is skipped
+   * because prediction already owns them, and adopting the snapshot here would
+   * undo the correction that was just reconciled.
+   */
+  private applySnapshot(net: NetClient): void {
+    const players = net.remotePlayers(TICK_DT);
+    if (players.length === 0) return;
+
+    const seen = new Set<PlayerId>();
+    for (const s of players) {
+      seen.add(s.id);
+      if (s.id === this.localId) continue;
+
+      let p = this.sim.world.players.get(s.id);
+      if (!p) {
+        // Somebody joined, or was already here when we did. Ids come from the
+        // server, so the local world uses them verbatim.
+        p = this.sim.addPlayer({
+          name: `Player ${s.id}`,
+          team: s.team,
+          isBot: s.isBot,
+          id: s.id,
+        });
+      }
+      p.position.x = s.x;
+      p.position.y = s.y;
+      p.position.z = s.z;
+      p.velocity.x = s.vx;
+      p.velocity.y = s.vy;
+      p.velocity.z = s.vz;
+      p.yaw = s.yaw;
+      p.pitch = s.pitch;
+      p.lean = s.lean;
+      p.stance = s.stance;
+      p.moveState = s.moveState;
+      p.onGround = s.onGround;
+      p.alive = s.alive;
+      p.health = s.health;
+      p.team = s.team;
+    }
+
+    for (const id of [...this.sim.world.players.keys()]) {
+      if (id !== this.localId && !seen.has(id)) this.sim.removePlayer(id);
+    }
+  }
+
   /** One fixed simulation step. */
   private tick(): void {
+    if (this.net) {
+      this.tickOnline(this.net);
+      return;
+    }
+
     const local = this.sim.world.players.get(this.localId);
 
     // --- local input --------------------------------------------------------

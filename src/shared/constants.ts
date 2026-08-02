@@ -336,6 +336,24 @@ export const NET = {
   interestRadius: 160,
   maxNameLength: 20,
   maxChatLength: 160,
+  /**
+   * Where the Join Server field starts.
+   *
+   * Loopback on the default port, because the only server most people will have
+   * to hand is the one they just started with `npm run server`.
+   */
+  defaultUrl: `ws://127.0.0.1:8790`,
+} as const;
+
+/**
+ * Where the Join Server field starts.
+ *
+ * Loopback on the default port, because the only server anyone has to hand is
+ * the one they just started with npm run server.
+ */
+export const DEFAULT_SERVER_URL = `ws://127.0.0.1:${8790}`;
+
+const _NET_END = {
 } as const;
 
 // ---------------------------------------------------------------------------

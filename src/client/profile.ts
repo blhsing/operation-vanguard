@@ -12,7 +12,7 @@
  * rather than discarded.
  */
 
-import { MAX_RANK } from '@shared/constants.js';
+import { MAX_RANK, NET } from '@shared/constants.js';
 import { MISSION_IDS } from '@shared/campaign/index.js';
 import { DEFAULT_MAP } from '@shared/map/index.js';
 import { DEFAULT_MODE } from '@shared/data/modes.js';
@@ -54,6 +54,10 @@ export interface Profile {
     difficulty: string;
     /** Which campaign mission was last selected. */
     missionId: string;
+    /** Join a dedicated server instead of playing against local bots. */
+    online: boolean;
+    /** Where to join. */
+    serverUrl: string;
   };
   /**
    * Settings are stored COMPLETE, not as partials.
@@ -102,6 +106,8 @@ export function createProfile(): Profile {
       botCount: 9,
       difficulty: 'regular',
       missionId: MISSION_IDS[0] ?? 'cold_open',
+      online: false,
+      serverUrl: NET.defaultUrl,
     },
     settings: {
       input: { ...DEFAULT_INPUT_SETTINGS, bindings: { ...DEFAULT_INPUT_SETTINGS.bindings } },
@@ -220,6 +226,8 @@ export function loadProfile(): Profile {
       botCount: num(lastMatch.botCount, 9, 0, 23),
       difficulty: str(lastMatch.difficulty, 'regular', 20),
       missionId: str(lastMatch.missionId, fallback.lastMatch.missionId, 40),
+      online: lastMatch.online === true,
+      serverUrl: str(lastMatch.serverUrl, fallback.lastMatch.serverUrl, 200),
     },
     settings: {
       // Merge over defaults so a profile written by an older build — which will

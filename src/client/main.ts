@@ -17,6 +17,7 @@ import { MAP_IDS, getMap } from '@shared/map/index.js';
 import { MISSION_IDS, getMission } from '@shared/campaign/index.js';
 import { PLAYABLE_MODE_IDS, ZOMBIES_MODE_ID, getMode } from '@shared/data/modes.js';
 import { hasZombiesLayout } from '@shared/zombies/index.js';
+import { NET } from '@shared/constants.js';
 import { Team } from '@shared/types.js';
 import { defaultLoadout, type Loadout } from '@shared/sim/loadout.js';
 import { DIFFICULTIES } from '@shared/ai/bot.js';
@@ -283,6 +284,32 @@ function buildPlayScreen(): void {
   const p = panel('對戰設定');
 
   const isCampaign = profile.lastMatch.modeId === 'campaign';
+
+  // Joining a server replaces every other choice on this screen: the map, the
+  // mode and the bot count all come from whoever is hosting.
+  p.appendChild(
+    toggleField(
+      '連線到伺服器',
+      profile.lastMatch.online,
+      (v) => {
+        profile.lastMatch.online = v;
+        saveProfile(profile);
+        buildPlayScreen();
+        showScreen('play');
+      },
+      '地圖、模式與電腦兵數量都由伺服器決定。先執行 npm run server 再連線。',
+    ),
+  );
+
+  if (profile.lastMatch.online) {
+    p.appendChild(
+      textField('伺服器位址', profile.lastMatch.serverUrl, (v) => {
+        profile.lastMatch.serverUrl = v.trim() || NET.defaultUrl;
+      }),
+    );
+    b.appendChild(p);
+    return;
+  }
 
   // A mission brings its own map, so the campaign picks one instead of the other.
   if (isCampaign) {
@@ -665,6 +692,12 @@ function startMatch(): void {
     const mission = getMission(profile.lastMatch.missionId);
     config.missionId = mission.id;
     config.mapId = mission.mapId;
+  }
+
+  // Online, the server dictates map and mode — the local choices are only what
+  // gets asked for, and the welcome overrides them. The address is what matters.
+  if (profile.lastMatch.online && profile.lastMatch.serverUrl) {
+    config.serverUrl = profile.lastMatch.serverUrl;
   }
 
   showScreen(null);
