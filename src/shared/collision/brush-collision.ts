@@ -905,10 +905,44 @@ export class BrushCollisionWorld implements CollisionWorld {
     if (sy !== 0) {
       v3set(mtv, 0, sy * (depth + 0.001), 0);
     } else {
+      let localX = sx;
+      let localZ = sz;
+      let d = depth + 0.001;
+
+      /*
+       * A corner is not a face, and must not escape like one.
+       *
+       * The overlap test above is round — "closest point on the box, within
+       * radius" — so the capsule can be touching a vertical *edge* of the box
+       * while sitting outside both of its slabs. The face distances above still
+       * produce a number there, but it describes a translation perpendicular to
+       * a face the capsule is not touching, aimed along whichever axis happens
+       * to be shallower.
+       *
+       * That vector becomes the contact normal, and the movement controller
+       * slides the player along it. When it comes out perpendicular to the
+       * direction of travel the slide removes nothing, the next sweep returns
+       * the same contact at the same fraction, and the player runs at full speed
+       * with its position bit-identical every tick — welded to a crate corner by
+       * a contact a millimetre deep. Bots suffer worst because they hold one
+       * input indefinitely; a person turns slightly and never reports it.
+       *
+       * Only the direction is corrected here. Which escape *wins* is left to the
+       * face distances above, because that choice is what lifts a player onto a
+       * ledge instead of shoving them off it, and it is tuned.
+       */
+      if (Math.abs(lx) > c.half.x && Math.abs(lz) > c.half.z) {
+        const dist = Math.sqrt(horizDistSq);
+        if (dist > 1e-6) {
+          localX = ddx / dist;
+          localZ = ddz / dist;
+          d = radius - dist + 0.001;
+        }
+      }
+
       // Rotate the local escape direction back into world space.
-      const wx = sx * c.cosYaw + sz * c.sinYaw;
-      const wz = -sx * c.sinYaw + sz * c.cosYaw;
-      const d = depth + 0.001;
+      const wx = localX * c.cosYaw + localZ * c.sinYaw;
+      const wz = -localX * c.sinYaw + localZ * c.cosYaw;
       v3set(mtv, wx * d, 0, wz * d);
     }
     return true;

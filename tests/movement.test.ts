@@ -120,6 +120,54 @@ describe('collision world', () => {
       expect(out.fraction).toBeLessThanOrEqual(1);
     }
   });
+
+  /**
+   * Brushing a crate corner must not weld you to it.
+   *
+   * The capsule test is round, so a player can touch the vertical *edge* of a
+   * crate while standing outside both of its faces. The escape from an edge is
+   * radially away from it. Reporting a face normal instead hands the movement
+   * controller a direction perpendicular to nothing it is touching, and when
+   * that direction happens to be perpendicular to the way the player is running,
+   * sliding along it removes no motion at all: the next sweep finds the same
+   * contact at the same fraction, and the player sprints on the spot with the
+   * position bit-identical every tick.
+   *
+   * The geometry below is lifted from where it was found — a 1 m crate on
+   * Shipment Yard, a bot tangent to its corner at exactly the capsule radius,
+   * running past it. Bots wear this worst because they hold one input until they
+   * arrive, so "arrive" never comes; a person twitches the mouse and never
+   * notices there was a bug.
+   */
+  it('slides around a crate corner instead of welding the player to it', () => {
+    const world = new BrushCollisionWorld(
+      [
+        box(vec3(0, -0.5, 0), vec3(60, 1, 60), SurfaceType.Concrete),
+        box(vec3(-9.5, 0.5, 9.5), vec3(1, 1, 1), SurfaceType.Wood),
+      ],
+      { min: vec3(-30, -5, -30), max: vec3(30, 20, 30) },
+    );
+
+    // Tangent to the crate's corner: exactly PLAYER_RADIUS from (-10, 10).
+    const offset = PLAYER_RADIUS / Math.SQRT2;
+    const player = createPlayer({
+      id: 1,
+      name: 'Grazer',
+      team: Team.Allies,
+      position: vec3(-10 - offset, 0, 10 + offset),
+    });
+    respawnPlayer(player, vec3(-10 - offset, 0, 10 + offset), 0);
+
+    // Run straight down -Z, parallel to the crate's +X face — the direction the
+    // bogus face normal cannot remove any of.
+    const startZ = player.position.z;
+    simulate(player, world, input({ moveForward: 1, yaw: 0 }), 1.5);
+
+    expect(
+      startZ - player.position.z,
+      'a player grazing a corner at full speed must get past it',
+    ).toBeGreaterThan(3);
+  });
 });
 
 describe('gravity and ground', () => {

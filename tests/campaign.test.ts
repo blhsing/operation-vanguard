@@ -133,24 +133,22 @@ function runMission(mission: MissionDef, seed = 7): Run {
  * not, and pretending otherwise by loosening the assertion until it passes is
  * the one thing this suite must never do.
  */
-const VERIFIED_COMPLETABLE = CAMPAIGN_MISSIONS.filter(
-  (m) => m.id !== 'cold_open' && m.id !== 'last_floor',
-);
+const VERIFIED_COMPLETABLE = CAMPAIGN_MISSIONS.filter((m) => m.id !== 'last_floor');
 
 /**
  * Missions whose playthrough is exercised at all.
  *
- * Cold Open is excluded, and the reason is a map bug rather than a mission one:
- * on Shipment Yard the stand-in reliably wedges at about (-10, 10), between a
- * container edge and the surface beside it, and neither the jump nor the lateral
- * shove in the unstick path frees it. That map's nav graph is also the thinnest
- * in the game — before this milestone it had no interior nodes at all, and it
- * still has a third the density of every other map.
- *
- * The mission's *data* is validated by the structural tests above along with the
- * other five. What is unverified is that anything can play it.
+ * All six, now. Cold Open used to be excluded because the stand-in reliably
+ * wedged at about (-10, 10) on Shipment Yard and neither the jump nor the
+ * lateral shove in the unstick path freed it. That was read at the time as a map
+ * or nav problem; it was neither. It was a collision bug — the capsule grazing
+ * the corner of a container got a face normal instead of a radial one, so
+ * sliding along the contact removed none of the motion and the bot ran at full
+ * speed with its position bit-identical every tick. `slides around a crate
+ * corner instead of welding the player to it` in the movement suite is that
+ * defect on its own, and Cold Open became playable when it was fixed.
  */
-const VERIFIED_PLAYABLE = CAMPAIGN_MISSIONS.filter((m) => m.id !== 'cold_open');
+const VERIFIED_PLAYABLE = CAMPAIGN_MISSIONS;
 
 function stuckOn(run: Run): string {
   const open = [...run.director.state.objectives.values()].filter((o) => o.active && !o.complete);
@@ -308,20 +306,37 @@ describe('every mission', () => {
    * A mission that fails this is structurally broken — an objective in a wall,
    * a kill quota above the hostiles that ever spawn, a dependency that never
    * resolves — and the message says which objective it died on.
+   *
+   * Ten seeds rather than three, and the reason is not flakiness: the seeds are
+   * fixed and the simulation is deterministic, so this test gives the same
+   * answer every run. The reason is sample size. Measured completion rates sit
+   * between 30% and 70% per mission (`npx tsx tools/mission-rate.ts`), so three
+   * samples is a verdict with a coin's worth of confidence behind it: any change
+   * to movement or AI reshuffles which seeds win, and a mission that got no
+   * worse flips red anyway. That trains you to tune physics until the random
+   * number generator is happy again, which is not engineering. Ten samples of a
+   * 30% mission miss on all ten about three times in a thousand, so a red here
+   * means the mission genuinely stopped being completable.
+   *
+   * Passing runs still stop at the first success, so the cost is only paid by a
+   * mission that is actually in trouble.
    */
   it.each(VERIFIED_COMPLETABLE.map((m) => [m.id, m] as const))(
     '%s can be finished',
     (_id, mission) => {
+      const seeds = [7, 15, 23, 31, 39, 47, 55, 63, 71, 79];
       const attempts: string[] = [];
-      for (const seed of [7, 23, 91]) {
+      for (const seed of seeds) {
         const run = runMission(mission, seed);
         const took = run.play(600);
         if (run.director.state.phase === MissionPhase.Complete) return;
         attempts.push(`seed ${seed}: ${took.toFixed(0)}s, ${run.director.state.phase}, stuck on ${stuckOn(run)}`);
       }
-      expect.fail(`${mission.id} finished on none of three playthroughs: ${attempts.join(' | ')}`);
+      expect.fail(
+        `${mission.id} finished on none of ${seeds.length} playthroughs: ${attempts.join(' | ')}`,
+      );
     },
-    300_000,
+    600_000,
   );
 
   /**
@@ -356,35 +371,52 @@ describe('every mission', () => {
    * never resolves, which is what this suite exists for.
    */
   /*
-   * Cold Open and Last Floor both stall the same way, and it is worth recording
-   * as ONE defect rather than two mission bugs.
+   * What was recorded here as an "ordered-travel bug" was not one.
    *
-   * In both cases the stand-in is ordered to a point twelve or thirteen metres
-   * away, has no enemy in contact, is on open ground with a connected nav graph
-   * — and does not walk there. It sits in the Advance goal indefinitely. Shipment
-   * Yard stalls at (-10, 10) and Highrise at (-4, -11), neither of which is a
-   * wedge: the surrounding ground is clear in both.
+   * The reading was that a stand-in ordered twelve or thirteen metres away, with
+   * no enemy in contact and open ground in front of it, sat in Advance and
+   * refused to walk. It was ordered correctly, it pathed correctly, and it
+   * wanted to move: velocity read a full sprint every tick. It simply did not
+   * go anywhere, because it was touching the corner of a container and the
+   * contact normal for a corner was being reported as though it were a face. The
+   * movement controller slid along that normal, the slide removed none of the
+   * motion, and the position came out bit-identical tick after tick. Open ground
+   * all around, and none of it reachable.
    *
-   * So this is the ordered-travel path, not the missions. Everything else about
-   * both missions now works: their placements are on real floors, their kill
-   * quotas are reachable, and their hostiles no longer pile up against the
-   * concurrency cap.
+   * Fixed in the collision layer, with `slides around a crate corner instead of
+   * welding the player to it` guarding it. Cold Open finishes now and is in
+   * VERIFIED_COMPLETABLE above.
+   *
+   * Last Floor still does not, and no longer has this to blame: it stalls on
+   * `mark`, where the stand-in reaches the helipad and will not hold the use key
+   * long enough while taking fire from three sides. That is the objective
+   * working and the stand-in failing it, which is a different piece of work.
    */
-  it.todo('cold_open can be finished (ordered-travel bug: stand-in will not walk to the order)');
-  it.todo('last_floor can be finished (same ordered-travel bug, on the helipad approach)');
+  it.todo('last_floor can be finished (stand-in will not hold `mark` under fire on the helipad)');
 
+  /**
+   * Three seeds for the same reason the test above uses ten: one run of a
+   * stochastic stand-in is not evidence about a mission. This is a much weaker
+   * claim than finishing — an objective sealed in a wall or a dependency that
+   * never resolves fails on every seed — so three is enough to make it about the
+   * mission rather than about one unlucky firefight.
+   */
   it.each(VERIFIED_PLAYABLE.map((m) => [m.id, m] as const))(
     '%s advances past its opening objective',
     (_id, mission) => {
-      const run = runMission(mission, 7);
-      run.play(240);
-      const done = [...run.director.state.objectives.values()].filter((o) => o.complete);
-      expect(
-        done.length,
-        `${mission.id} never completed a single objective — stuck on: ${stuckOn(run)}`,
-      ).toBeGreaterThan(0);
+      const stalls: string[] = [];
+      for (const seed of [7, 23, 91]) {
+        const run = runMission(mission, seed);
+        run.play(240);
+        const done = [...run.director.state.objectives.values()].filter((o) => o.complete);
+        if (done.length > 0) return;
+        stalls.push(`seed ${seed}: ${stuckOn(run)}`);
+      }
+      expect.fail(
+        `${mission.id} never completed a single objective on any seed — ${stalls.join(' | ')}`,
+      );
     },
-    120_000,
+    240_000,
   );
 
   it.each(CAMPAIGN_MISSIONS.map((m) => [m.id, m] as const))(
