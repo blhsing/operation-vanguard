@@ -1,5 +1,5 @@
 /**
- * Build the standalone single-file app.
+ * Build the offline app — the folder you open straight off the disk.
  *
  * A tiny wrapper so the npm script stays portable: setting an environment
  * variable inline works in sh and fails in cmd, and this project is developed on

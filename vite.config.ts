@@ -34,7 +34,8 @@ export default defineConfig({
   build: {
     outDir: standalone ? 'offline' : 'dist',
     target: 'es2022',
-    // A sourcemap is a second file, and the whole point is that there is only one.
+    // A sourcemap is dead weight in a folder somebody is going to zip and email,
+    // and it is the one emitted file nothing ever references.
     sourcemap: !standalone,
     cssCodeSplit: !standalone,
     assetsInlineLimit: 4096,

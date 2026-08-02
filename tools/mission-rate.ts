@@ -1,12 +1,16 @@
 /**
  * How often does each mission actually finish?
  *
- * The completability test plays three seeds and passes if any one of them
+ * The completability test plays ten fixed seeds and passes if any one of them
  * reaches the end. That is the right *shape* for a stochastic stand-in, but it
- * is a coin toss with three flips: a mission that finishes 40% of the time
- * passes comfortably one week and fails the next, and any change to movement or
- * AI reshuffles which missions land badly. Chasing that with a pass/fail is how
- * you end up tuning physics to satisfy a random number generator.
+ * is still a pass/fail over a sample: a mission finishing 42% of the time reads
+ * exactly like one finishing 100%, right up until the day it does not, and any
+ * change to movement or AI reshuffles which seeds land badly. Chasing that with
+ * a pass/fail is how you end up tuning physics to satisfy a random number
+ * generator.
+ *
+ * (It said "three seeds" here until M31. The test moved to ten in the same
+ * commit that created this file, so the premise was stale on arrival.)
  *
  * This measures the rate instead, so "did that change help or hurt" is a number
  * rather than an argument.

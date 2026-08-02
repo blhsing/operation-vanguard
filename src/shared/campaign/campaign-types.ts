@@ -43,7 +43,16 @@ export type Trigger =
   | { kind: 'clear' }
   /** Stay alive for this long. */
   | { kind: 'survive'; seconds: number }
-  /** Be inside the zone, uncontested, for this long in total. */
+  /**
+   * Be inside the zone for this long in total.
+   *
+   * Not "uncontested", which is what this said for fourteen milestones without
+   * anything ever checking it. Every shipped `hold` is paired with endless waves,
+   * so a real contest gate would stall the timer for the whole objective — and
+   * the `interact` arm next door argues the same case in the other direction:
+   * losing progress to a contest makes an objective unwinnable rather than
+   * tense. The shipped behaviour is the playtested one; the word was the bug.
+   */
   | { kind: 'hold'; zone: Zone; seconds: number }
   /**
    * Stand in the zone and hold the use key. Interrupted by leaving; the progress
