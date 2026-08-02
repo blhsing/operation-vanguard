@@ -38,6 +38,7 @@ import {
 import { Rng, mixSeeds } from '../rng.js';
 import {
   DamageCause,
+  DeployableKind,
   InputFlag,
   MatchPhase,
   MoveState,
@@ -125,6 +126,17 @@ import {
 } from './objectives.js';
 import { setGroupWeights } from './spawn.js';
 import {
+  clearOwned,
+  deployableSpec,
+  detonateC4,
+  place as placeDeployable,
+  placementPoint,
+  resetDeployables,
+  rollCarePackage,
+  solidDeployables,
+  stepDeployables,
+} from './deployables.js';
+import {
   callKillstreak,
   createKillstreakRuntime,
   radarTimeRemaining,
@@ -167,6 +179,8 @@ interface PlayerRuntime {
   wantsRespawn: boolean;
   /** Accumulates toward the objective score tick. */
   objectiveTickAccum: number;
+  /** Killstreak slot requested last tick, for edge detection. */
+  lastKillstreakSlot: number;
 }
 
 const _eye = vec3();
@@ -176,6 +190,7 @@ const _tmp = vec3();
 const _dmgDir = vec3();
 const _trace: TraceResult = createTraceResult();
 const _explosionTargets: ExplosionTarget[] = [];
+const _placeTmp = vec3();
 
 const SIGHT_FILTER: QueryFilter = { layers: CollisionLayer.Sight };
 
@@ -206,6 +221,7 @@ export class GameSimulation {
     this.friendlyFire = opts.friendlyFire ?? false;
     this.objectives = createObjectiveState(this.map, this.mode);
     this.killstreaks = createKillstreakRuntime();
+    resetDeployables(this.world);
 
     this.world.match.phase = MatchPhase.Warmup;
     this.world.match.timeRemaining = MATCH.warmupDuration;
@@ -242,6 +258,7 @@ export class GameSimulation {
       input: createEmptyInput(),
       wantsRespawn: true,
       objectiveTickAccum: 0,
+      lastKillstreakSlot: -1,
     });
 
     // Dead until the first spawn pass picks them up, so they enter through the
@@ -253,6 +270,7 @@ export class GameSimulation {
 
   removePlayer(id: PlayerId): void {
     removePlayerFromWorld(this.world, id);
+    clearOwned(this.world, id);
     this.runtimes.delete(id);
     resetWeaponRuntime(id);
     resetStride(id);
@@ -332,6 +350,7 @@ export class GameSimulation {
     this.stepStatusEffects(dt);
     this.stepObjectiveMode(dt);
     this.stepKillstreakRuntime(dt);
+    this.stepDeployableRuntime(dt);
 
     this.world.rngState = this.rng.getState();
     return this.events;
@@ -400,7 +419,101 @@ export class GameSimulation {
     }
   }
 
-  /** Seconds of radar a team currently has, for the HUD's UAV sweep. */
+  /**
+   * Advance placed equipment and apply what it did.
+   *
+   * Like killstreaks, all damage routes back through damagePlayer so a claymore
+   * and a bullet cannot disagree about friendly fire, perks or scoring.
+   */
+  private stepDeployableRuntime(dt: number): void {
+    const result = stepDeployables(this.world, this.collision, dt, this.rng);
+
+    for (const event of result.events) {
+      (event as { tick: number }).tick = this.world.tick;
+      this.emit(event);
+    }
+
+    for (const boom of result.explosions) {
+      this.applyExplosion(boom.position, boom.radius, boom.damage, boom.owner);
+    }
+
+    for (const hit of result.hits) {
+      const victim = this.world.players.get(hit.victim);
+      if (!victim) continue;
+      v3sub(_dmgDir, victim.position, hit.position);
+      v3normalize(_dmgDir, _dmgDir);
+      this.damagePlayer(victim, {
+        amount: hit.damage,
+        attacker: hit.attacker,
+        victim: victim.id,
+        cause: DamageCause.Sentry,
+        weaponId: 'sentry',
+        location: 'chest',
+        position: v3clone(victim.position),
+        direction: v3clone(_dmgDir),
+        distance: 0,
+        ignoreArmor: false,
+      });
+    }
+
+    // Trophy systems delete the projectiles they intercept.
+    for (const id of result.intercepted) this.world.projectiles.delete(id);
+
+    for (const id of result.resupply) {
+      const player = this.world.players.get(id);
+      if (!player) continue;
+      for (const state of player.weapons) {
+        if (!state) continue;
+        const def = this.resolveWeaponState(player, state.defId);
+        state.ammoReserve = Math.min(def.maxReserve, state.ammoReserve + def.magSize * 2);
+      }
+      player.lethalCount = Math.max(player.lethalCount, 1);
+      player.tacticalCount = Math.max(player.tacticalCount, 1);
+    }
+
+    for (const grant of result.grants) {
+      const player = this.world.players.get(grant.player);
+      if (player && !player.killstreakInventory.includes(grant.killstreakId)) {
+        player.killstreakInventory.push(grant.killstreakId);
+      }
+    }
+
+    // Solid deployables block movement, so the collision world must know.
+    this.updateDynamicColliders();
+  }
+
+  /** Shared explosion path, used by projectiles, killstreaks and deployables. */
+  private applyExplosion(position: Vec3, radius: number, damage: number, owner: PlayerId): void {
+    resolveExplosion(
+      this.world,
+      this.collision,
+      position,
+      radius,
+      damage,
+      owner,
+      this.friendlyFire,
+      _explosionTargets,
+    );
+    for (const target of _explosionTargets) {
+      const rt = this.runtimes.get(target.player.id);
+      const resist = rt?.resolved.perks.explosiveResistMult ?? 1;
+      this.damagePlayer(target.player, {
+        amount: target.damage * resist,
+        attacker: owner,
+        victim: target.player.id,
+        cause: DamageCause.Explosion,
+        weaponId: 'explosive',
+        location: 'chest',
+        position: v3clone(position),
+        direction: v3clone(target.direction),
+        distance: target.distance,
+        ignoreArmor: false,
+      });
+    }
+    addDangerZone(this.spawnCtx, position, radius * 2, 6);
+  }
+
+  /** Seconds of radar a team currently has, for the HUD UAV sweep. */
   radarTime(team: Team): number {
     return radarTimeRemaining(this.killstreaks, team);
   }
@@ -467,6 +580,7 @@ export class GameSimulation {
     this.world.match.timeRemaining = this.mode.roundTime;
     resetRound(this.objectives, this.mode, this.world.match.round);
     resetKillstreakRuntime(this.killstreaks);
+    resetDeployables(this.world);
 
     // Everyone comes back for the next round, wherever they fell.
     for (const player of this.world.players.values()) {
@@ -742,7 +856,12 @@ export class GameSimulation {
     this.handleEquipment(player, rt, input, dt);
 
     // --- killstreaks ------------------------------------------------------
-    if (input.killstreakSlot >= 0 && live) {
+    // Edge-triggered, exactly like a semi-automatic trigger. Level-triggering it
+    // means a player holding the key burns every streak the moment they earn it.
+    const streakPressed = input.killstreakSlot >= 0 && rt.lastKillstreakSlot < 0;
+    rt.lastKillstreakSlot = input.killstreakSlot;
+
+    if (streakPressed && live) {
       const streakId = player.killstreakInventory[input.killstreakSlot];
       if (streakId) {
         const result = callKillstreak(
@@ -759,6 +878,31 @@ export class GameSimulation {
         }
         for (const entity of result.spawned) {
           this.world.killstreakEntities.set(entity.id, entity);
+        }
+        // Two streaks are deployables rather than vehicles or strikes. Without
+        // this they consumed the streak and produced nothing at all.
+        if (streakId === 'sentry_gun' || streakId === 'care_package') {
+          const spot = placementPoint(this.collision, player, 3.0, _placeTmp);
+          const kind =
+            streakId === 'sentry_gun' ? DeployableKind.SentryGun : DeployableKind.CarePackage;
+          const dep = placeDeployable(
+            this.world,
+            kind,
+            player,
+            spot.position,
+            spot.yaw,
+            () => allocEntityId(this.world),
+            kind === DeployableKind.CarePackage ? rollCarePackage(this.rng) : '',
+          );
+          this.emit({
+            type: SimEventType.DeployablePlaced,
+            tick: this.world.tick,
+            player: player.id,
+            team: player.team,
+            position: v3clone(dep.position),
+            data: { kind, killstreakId: streakId },
+          });
+          this.updateDynamicColliders();
         }
         if (result.endsMatch) this.endMatch(player.team);
       }
@@ -959,20 +1103,85 @@ export class GameSimulation {
     dt: number,
   ): void {
     void dt;
-    if (hasFlag(input.buttons, InputFlag.Lethal) && player.lethalCount > 0) {
+    if (hasFlag(input.buttons, InputFlag.Lethal)) {
       const def = rt.resolved.lethal;
-      if (def) {
-        this.throwEquipment(player, def);
+      // With C4 already down, the lethal key DETONATES rather than placing
+      // another. That double duty is what makes C4 a trap instead of a slow grenade.
+      const detonations = def?.id === 'c4' ? detonateC4(this.world, player.id) : [];
+      if (detonations.length > 0) {
+        for (const boom of detonations) {
+          this.applyExplosion(boom.position, boom.radius, boom.damage, boom.owner);
+          this.emit({
+            type: SimEventType.Explosion,
+            tick: this.world.tick,
+            position: v3clone(boom.position),
+            radius: boom.radius,
+            owner: boom.owner,
+            kind: ProjectileKind.C4,
+          });
+        }
+      } else if (def && player.lethalCount > 0) {
+        this.useEquipment(player, def);
         player.lethalCount--;
       }
     }
     if (hasFlag(input.buttons, InputFlag.Tactical) && player.tacticalCount > 0) {
       const def = rt.resolved.tactical;
       if (def) {
-        this.throwEquipment(player, def);
+        this.useEquipment(player, def);
         player.tacticalCount--;
       }
     }
+
+    // --- field upgrade ------------------------------------------------------
+    // Charges over time, spent on a placement. Without this the loadout screen
+    // offered a slot that did nothing whatsoever.
+    if (rt.resolved.fieldUpgrade) {
+      const upgrade = getEquipment(rt.resolved.fieldUpgrade);
+      const chargeTime = upgrade?.chargeTime ?? 120;
+      player.fieldUpgradeCharge = Math.min(1, player.fieldUpgradeCharge + dt / chargeTime);
+
+      if (hasFlag(input.buttons, InputFlag.FieldUpgrade) && player.fieldUpgradeCharge >= 1 && upgrade) {
+        this.useEquipment(player, upgrade);
+        player.fieldUpgradeCharge = 0;
+      }
+    }
+  }
+
+  /**
+   * Use an equipment item.
+   *
+   * Anything with a `deployableKind` is PLACED where the player is looking;
+   * everything else is thrown. Previously everything was thrown, so a claymore
+   * sailed across the map and detonated on a fuse — the loadout screen promised
+   * a trap and the game delivered a bad grenade.
+   */
+  private useEquipment(player: PlayerState, def: EquipmentDef): void {
+    if (def.deployableKind !== undefined) {
+      const spot = placementPoint(this.collision, player, 2.2, _placeTmp);
+      const payload =
+        def.deployableKind === DeployableKind.CarePackage ? rollCarePackage(this.rng) : '';
+      const dep = placeDeployable(
+        this.world,
+        def.deployableKind,
+        player,
+        spot.position,
+        spot.yaw,
+        () => allocEntityId(this.world),
+        payload,
+      );
+      this.emit({
+        type: SimEventType.DeployablePlaced,
+        tick: this.world.tick,
+        player: player.id,
+        team: player.team,
+        position: v3clone(dep.position),
+        data: { kind: dep.kind, equipmentId: def.id },
+      });
+      this.updateDynamicColliders();
+      return;
+    }
+    this.throwEquipment(player, def);
   }
 
   private throwEquipment(player: PlayerState, def: EquipmentDef): void {
@@ -1364,6 +1573,21 @@ export class GameSimulation {
         active: true,
       });
     }
+    for (const dep of solidDeployables(this.world)) {
+      const spec = deployableSpec(dep.kind);
+      this.dynamicColliders.push({
+        id: dep.id,
+        layer: CollisionLayer.Deployable,
+        position: dep.position,
+        kind: 'box',
+        height: spec.size.y,
+        radius: Math.max(spec.size.x, spec.size.z) / 2,
+        size: spec.size,
+        yaw: dep.yaw,
+        active: true,
+      });
+    }
+
     this.collision.setDynamicColliders(this.dynamicColliders);
   }
 

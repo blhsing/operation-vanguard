@@ -609,8 +609,17 @@ export function resolveExplosion(
     }
 
     const t = clamp01(dist / radius);
-    // 1 at the centre, dropping off with a soft shoulder.
-    const falloff = (1 - t) * (1 - t * 0.55);
+    /**
+     * Full damage across the inner third, then linear to zero at the edge.
+     *
+     * The obvious `(1 - t)` style curve starts falling immediately, which means
+     * a frag landing at your feet deals about 70% and does not kill — and an
+     * explosive that is survivable at point blank is not an explosive. The
+     * plateau is what makes the centre lethal while keeping the edge a
+     * genuine near miss rather than a coin flip.
+     */
+    const PLATEAU = 0.35;
+    const falloff = t <= PLATEAU ? 1 : 1 - (t - PLATEAU) / (1 - PLATEAU);
     const damage = maxDamage * falloff;
     if (damage < 1) continue;
 
