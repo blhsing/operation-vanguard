@@ -106,6 +106,22 @@ export interface Objective {
   checkpoint?: boolean;
   /** Seconds before the mission fails. 0 or absent means no limit. */
   timeLimit?: number;
+  /**
+   * Remove this objective's surviving hostiles when it completes.
+   *
+   * Off by default, because enemies vanishing in front of you reads as a bug.
+   * Set it where the mission hands off to a different part of the map, and the
+   * alternative is a tail of stragglers who follow the player into the next beat
+   * and hold the concurrency cap against the hostiles that beat actually
+   * authored.
+   *
+   * That is not hypothetical. Last Floor stalled permanently on marking the
+   * helipad because six survivors of the two tower fights had filled the cap:
+   * the objective's own waves could never spawn, the player could never break
+   * contact, and the mission became an unwinnable stalemate that looked exactly
+   * like a difficulty problem.
+   */
+  reapOnComplete?: boolean;
 }
 
 export interface AllySpec {
@@ -306,11 +322,128 @@ export function validateMission(mission: MissionDef): string[] {
     if (obj.trigger.kind === 'survive' && obj.trigger.seconds <= 0) {
       errors.push(`${tag}: objective '${obj.id}' survives for ${obj.trigger.seconds} seconds`);
     }
+
+
+    /*
+     * A kill quota has to be reachable by the hostiles that exist.
+     *
+     * This is the arithmetic mistake that looks like tuning. Cold Open shipped
+     * asking for three kills from an objective whose two waves spawn one hostile
+     * each — unwinnable, and indistinguishable from "too hard" when you play it,
+     * because the failure is that the last enemy never arrives rather than that
+     * you cannot beat them.
+     *
+     * The garrison counts, since it is still standing when the mission opens, as
+     * do hostiles from earlier objectives that may still be alive. Being generous
+     * about the supply is deliberate: this catches the definitely-impossible, and
+     * leaves "tight" to the playthrough tests.
+     */
+    if (obj.trigger.kind === 'eliminate') {
+      const fromHere = (obj.waves ?? []).reduce((n, w) => n + w.count, 0);
+      const fromGarrison = (mission.garrison ?? []).reduce((n, w) => n + w.count, 0);
+      const fromEarlier = mission.objectives
+        .filter((o) => o.id !== obj.id)
+        .reduce((n, o) => n + (o.waves ?? []).reduce((m, w) => m + w.count, 0), 0);
+      const available = fromHere + fromGarrison + fromEarlier;
+      if (obj.trigger.count > available) {
+        errors.push(
+          `${tag}: objective '${obj.id}' needs ${obj.trigger.count} kills but the mission ` +
+            `only ever spawns ${available} hostiles`,
+        );
+      }
+      // The stricter one: an objective whose own waves cannot supply it is
+      // relying on leftovers, which is fragile even when it happens to work.
+      if (obj.trigger.count > fromHere + fromGarrison) {
+        errors.push(
+          `${tag}: objective '${obj.id}' needs ${obj.trigger.count} kills but its own waves ` +
+            `and the garrison only supply ${fromHere + fromGarrison}`,
+        );
+      }
+    }
   }
 
   // A mission with no checkpoints restarts from the beginning every death.
   if (mission.objectives.length > 2 && !mission.objectives.some((o) => o.checkpoint)) {
     errors.push(`${tag}: no objective sets a checkpoint, so every death replays the whole mission`);
+  }
+
+  return errors;
+}
+
+/**
+ * The checks that need the map, not just the data.
+ *
+ * Separate from `validateMission` because it needs a built collision world, and
+ * the same split `validateMap` uses: structure is free, geometry costs a load.
+ *
+ * The rule that matters here is the height one, and it is not obvious until it
+ * bites. An authored point is a coordinate the designer picked while thinking
+ * about the floor; the engine resolves it by probing downward from above. On a
+ * map made of stacked containers those two things disagree constantly, and the
+ * result is silent: Cold Open's insertion point sat at (-14, -14), which
+ * resolves nine metres up on top of a container stack. The mission started with
+ * the player and their squadmate stranded on a roof, looking down at a firefight
+ * they could not reach, and nothing anywhere reported a problem.
+ */
+export function validateMissionGeometry(
+  mission: MissionDef,
+  probe: {
+    /**
+     * The floor beneath a point, searched from `from` downward for `depth`
+     * metres. Storey-limited on purpose — see below.
+     */
+    groundNear(x: number, z: number, from: number, depth: number): number;
+    standable(x: number, y: number, z: number): boolean;
+  },
+): string[] {
+  const errors: string[] = [];
+  const tag = mission.id;
+
+  /*
+   * The probe starts just above the authored point and looks only a little way
+   * down, rather than starting at the top of the map.
+   *
+   * Two reasons, and they are the same two that bit the nav builder. A probe
+   * from the ceiling finds the highest surface in the column, which on a map
+   * made of stacked containers is a container roof rather than the floor the
+   * author was thinking about. And on an indoor map the top of the bounds can be
+   * *inside* the roof slab, so the ray starts in solid geometry and reports
+   * nonsense.
+   *
+   * Asking "is there a floor just below where you said" is the question that
+   * actually matters, and it has neither problem.
+   */
+  const LOOK_UP = 2;
+  const LOOK_DOWN = 6;
+
+  const check = (what: string, p: Vec3): void => {
+    const ground = probe.groundNear(p.x, p.z, p.y + LOOK_UP, LOOK_DOWN);
+    if (!Number.isFinite(ground)) {
+      errors.push(
+        `${tag}: ${what} at (${p.x}, ${p.y}, ${p.z}) has no floor within ` +
+          `${LOOK_DOWN - LOOK_UP}m below it — it is probably on the wrong storey`,
+      );
+      return;
+    }
+    if (!probe.standable(p.x, ground + 0.05, p.z)) {
+      errors.push(`${tag}: ${what} at (${p.x}, ${p.z}) is inside geometry`);
+    }
+  };
+
+  // Only places somebody actually stands. A zone is a volume the player passes
+  // through, and its centre is routinely a fountain, a helipad or a stairwell —
+  // checking it the same way would reject perfectly good level design.
+  check('insertion', mission.insertion.position);
+  for (const ally of mission.allies) check(`ally '${ally.id}'`, ally.spawn);
+  for (const wave of mission.garrison ?? []) {
+    check('garrison spawn', wave.spawn);
+    if (wave.post) check('garrison post', wave.post);
+  }
+  for (const obj of mission.objectives) {
+    for (const wave of obj.waves ?? []) {
+      check(`objective '${obj.id}' wave spawn`, wave.spawn);
+      if (wave.post) check(`objective '${obj.id}' wave post`, wave.post);
+    }
   }
 
   return errors;

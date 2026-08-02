@@ -133,8 +133,8 @@ function runMission(mission: MissionDef, seed = 7): Run {
  * not, and pretending otherwise by loosening the assertion until it passes is
  * the one thing this suite must never do.
  */
-const VERIFIED_COMPLETABLE = CAMPAIGN_MISSIONS.filter((m) =>
-  ['ash_and_stone', 'cracking_tower', 'noon'].includes(m.id),
+const VERIFIED_COMPLETABLE = CAMPAIGN_MISSIONS.filter(
+  (m) => m.id !== 'cold_open' && m.id !== 'last_floor',
 );
 
 /**
@@ -348,8 +348,6 @@ describe('every mission', () => {
    * is unproven is that they are *winnable*, and that is not a claim to make
    * from a green test that was written to go green.
    */
-  it.todo('line_three can be finished (stalls on escort — Marchetti does not survive the run north)');
-  it.todo('last_floor can be finished (stalls on mark — LZ is not held long enough under fire)');
 
   /**
    * Every mission, including the three above, has to at least get going: the
@@ -357,7 +355,23 @@ describe('every mission', () => {
    * is the check that catches an objective inside a wall or a dependency that
    * never resolves, which is what this suite exists for.
    */
-  it.todo('cold_open is playable at all (stand-in wedges on Shipment Yard geometry)');
+  /*
+   * Cold Open and Last Floor both stall the same way, and it is worth recording
+   * as ONE defect rather than two mission bugs.
+   *
+   * In both cases the stand-in is ordered to a point twelve or thirteen metres
+   * away, has no enemy in contact, is on open ground with a connected nav graph
+   * — and does not walk there. It sits in the Advance goal indefinitely. Shipment
+   * Yard stalls at (-10, 10) and Highrise at (-4, -11), neither of which is a
+   * wedge: the surrounding ground is clear in both.
+   *
+   * So this is the ordered-travel path, not the missions. Everything else about
+   * both missions now works: their placements are on real floors, their kill
+   * quotas are reachable, and their hostiles no longer pile up against the
+   * concurrency cap.
+   */
+  it.todo('cold_open can be finished (ordered-travel bug: stand-in will not walk to the order)');
+  it.todo('last_floor can be finished (same ordered-travel bug, on the helipad approach)');
 
   it.each(VERIFIED_PLAYABLE.map((m) => [m.id, m] as const))(
     '%s advances past its opening objective',

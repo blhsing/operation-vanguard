@@ -39,6 +39,7 @@ export const LAST_FLOOR: MissionDef = {
       label: '清空服務核心',
       line: 'Kowalczyk：東塔。兩層樓，上面那層是他們的。',
       trigger: { kind: 'reach', zone: { center: vec3(26, 2.0, -4), size: vec3(16, 9, 14) } },
+      reapOnComplete: true,
       waves: [
         { spawn: vec3(27, 3.65, -8), post: vec3(27, 3.65, -8), count: 2, interval: 5.6, archetypes: ['rifleman', 'sniper'] },
         { spawn: vec3(33, 0.1, -23.4), post: vec3(33, 0.1, -23.4), count: 2, interval: 6.4, delay: 3, archetypes: ['rusher'] },
@@ -51,6 +52,7 @@ export const LAST_FLOOR: MissionDef = {
       after: ['service_core'],
       line: 'Adeyemi：西側更糟。房間短、玻璃牆，完全沒有射角。',
       trigger: { kind: 'reach', zone: { center: vec3(-24, 2.0, -8), size: vec3(16, 9, 16) } },
+      reapOnComplete: true,
       waves: [
         { spawn: vec3(-20, 2.9, -8), post: vec3(-20, 2.9, -8), count: 2, interval: 6.4, archetypes: ['rusher', 'rifleman'] },
         { spawn: vec3(-33, 0.1, -23.4), post: vec3(-33, 0.1, -23.4), count: 2, interval: 7.2, delay: 4, archetypes: ['rifleman'] },
@@ -65,11 +67,14 @@ export const LAST_FLOOR: MissionDef = {
       trigger: {
         kind: 'interact',
         zone: { center: vec3(0, 0.5, 0), size: vec3(13, 6, 13) },
-        seconds: 10,
+        seconds: 6,
         verb: '標記降落區',
       },
       waves: [
-        { spawn: vec3(0, 0.1, -27), post: vec3(0, 0.1, -27), count: 1, interval: 9.6, endless: true, archetypes: ['rifleman'] },
+        // Not endless. An objective that asks the player to stand still cannot also
+        // put them under fire that never stops: the pad never clears, they never get
+        // the six seconds, and the mission is a stalemate rather than a fight.
+        { spawn: vec3(0, 0.1, -27), post: vec3(0, 0.1, -27), count: 2, interval: 12, delay: 5, archetypes: ['rifleman'] },
       ],
       checkpoint: true,
     },

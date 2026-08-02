@@ -86,6 +86,8 @@ export class CampaignDirector {
 
   /** Hostiles this director created, so it can clean them up on a restart. */
   private readonly hostiles = new Set<PlayerId>();
+  /** Which objective each living hostile arrived for, so a handoff can clear it. */
+  private readonly hostileOwner = new Map<PlayerId, string>();
   /** Squad members by their authored id. */
   private readonly allies = new Map<string, PlayerId>();
   private readonly pending: PendingWave[] = [];
@@ -240,6 +242,29 @@ export class CampaignDirector {
     }
   }
 
+  /**
+   * Clear out an objective's survivors when the mission moves on.
+   *
+   * Only for objectives that opt in, and only for hostiles that belong to that
+   * objective — anything the next beat spawned keeps fighting. Without it the
+   * living stragglers of every completed objective accumulate against the
+   * concurrency cap until the objective in front of the player cannot spawn the
+   * enemies it was written around.
+   */
+  private reapObjectiveHostiles(objectiveId: string): void {
+    for (const id of [...this.hostiles]) {
+      if (this.hostileOwner.get(id) !== objectiveId) continue;
+      this.hostiles.delete(id);
+      this.hostileOwner.delete(id);
+      this.bots.unregister(id);
+      this.sim.removePlayer(id);
+    }
+    // And anything still queued to arrive for it.
+    for (let i = this.pending.length - 1; i >= 0; i--) {
+      if (this.pending[i]!.objectiveId === objectiveId) this.pending.splice(i, 1);
+    }
+  }
+
   /** Hostiles arrive on their own schedule, capped so a mission stays playable. */
   private stepWaves(dt: number): void {
     for (let i = this.pending.length - 1; i >= 0; i--) {
@@ -263,7 +288,7 @@ export class CampaignDirector {
         continue;
       }
 
-      this.spawnHostile(p.wave);
+      this.spawnHostile(p.wave, p.objectiveId);
       p.timer = p.wave.interval;
 
       if (!p.wave.endless) {
@@ -298,6 +323,8 @@ export class CampaignDirector {
           const id = this.allies.get(def.trigger.ally);
           if (id !== undefined) this.bots.orderTo(id, null);
         }
+
+        if (def.reapOnComplete) this.reapObjectiveHostiles(def.id);
 
         this.emit(SimEventType.ObjectiveCaptured, { objective: def.id, label: def.label });
 
@@ -479,6 +506,7 @@ export class CampaignDirector {
       this.sim.removePlayer(id);
     }
     this.hostiles.clear();
+    this.hostileOwner.clear();
     this.corpses.clear();
     this.pending.length = 0;
 
@@ -527,7 +555,7 @@ export class CampaignDirector {
   // Hostiles
   // -------------------------------------------------------------------------
 
-  private spawnHostile(wave: Wave): void {
+  private spawnHostile(wave: Wave, objectiveId: string): void {
     const archetypes = wave.archetypes ?? BOT_ARCHETYPES;
     const archetype = archetypes[this.rng.int(0, archetypes.length - 1)] as BotArchetype;
     const difficulty = DIFFICULTIES[this.mission.difficulty] ?? DIFFICULTIES.regular!;
@@ -555,6 +583,7 @@ export class CampaignDirector {
     // defend and follows the player around the map instead.
     this.bots.orderTo(bot.id, wave.post ?? wave.spawn);
     this.hostiles.add(bot.id);
+    this.hostileOwner.set(bot.id, objectiveId);
   }
 
   private placeAt(player: PlayerState, position: Vec3, yaw: number): void {

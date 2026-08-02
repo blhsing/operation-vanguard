@@ -6,7 +6,7 @@
  * and produces a mission that plays for ninety seconds and then never advances.
  */
 
-import { validateMission, type MissionDef } from './campaign-types.js';
+import { validateMission, validateMissionGeometry, type MissionDef } from './campaign-types.js';
 
 import { COLD_OPEN } from './missions/01-cold-open.js';
 import { ASH_AND_STONE } from './missions/02-crossfire.js';
@@ -63,6 +63,7 @@ export {
   FailureReason,
   MissionPhase,
   validateMission,
+  validateMissionGeometry,
   type AllySpec,
   type CampaignHudObjective,
   type MissionDef,

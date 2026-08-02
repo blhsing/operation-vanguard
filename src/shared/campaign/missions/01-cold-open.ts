@@ -18,10 +18,10 @@ export const COLD_OPEN: MissionDef = {
   brief:
     '一座貨櫃場，位在河的錯誤那一岸。情報說有十來名非正規軍' +
     '把那裡當集結點。情報以前也錯過。',
-  insertion: { position: vec3(-14, 0.1, -14), yaw: 0 },
+  insertion: { position: vec3(-11, 0.1, 13), yaw: 0 },
   difficulty: 'recruit',
 
-  allies: [{ id: 'vasquez', name: 'Vasquez', spawn: vec3(-11, 0.1, -15), archetype: 'rifleman' }],
+  allies: [{ id: 'vasquez', name: 'Vasquez', spawn: vec3(-8, 0.1, 13), archetype: 'rifleman' }],
 
   objectives: [
     {
@@ -32,10 +32,10 @@ export const COLD_OPEN: MissionDef = {
       // container maze with two-metre lanes, and an objective marker in the
       // centre of it asks the player to solve a navigation puzzle on the one map
       // in the game that is entirely about reflexes.
-      trigger: { kind: 'eliminate', count: 3 },
+      trigger: { kind: 'eliminate', count: 2 },
       waves: [
-        { spawn: vec3(9, 0.1, 6), count: 1, interval: 6.4, post: vec3(7, 0.1, 4), archetypes: ['rifleman'] },
-        { spawn: vec3(-3, 0.1, -5), count: 1, interval: 8, delay: 3, post: vec3(-2, 0.1, -3), archetypes: ['rifleman'] },
+        { spawn: vec3(10, 0.1, -11), count: 1, interval: 6.4, post: vec3(13, 0.1, -11), archetypes: ['rifleman'] },
+        { spawn: vec3(-5, 0.1, -5), count: 1, interval: 8, delay: 3, post: vec3(-5, 0.1, -2), archetypes: ['rifleman'] },
       ],
       checkpoint: true,
     },
@@ -44,10 +44,10 @@ export const COLD_OPEN: MissionDef = {
       label: '清空貨櫃場',
       after: ['push'],
       line: 'Vasquez：貨櫃堆裡還有。注意縫隙。',
-      trigger: { kind: 'eliminate', count: 5 },
+      trigger: { kind: 'eliminate', count: 4 },
       waves: [
-        { spawn: vec3(8.5, 0.1, -9), count: 2, interval: 8, post: vec3(7, 0.1, -7), archetypes: ['rifleman'] },
-        { spawn: vec3(-8.5, 0.1, 9), count: 2, interval: 9.6, delay: 6, post: vec3(-7, 0.1, 7), archetypes: ['rifleman'] },
+        { spawn: vec3(13, 0.1, 4), count: 2, interval: 8, post: vec3(10, 0.1, 4), archetypes: ['rifleman'] },
+        { spawn: vec3(-11, 0.1, -8), count: 2, interval: 9.6, delay: 6, post: vec3(-11, 0.1, -5), archetypes: ['rifleman'] },
       ],
       checkpoint: true,
     },
@@ -58,10 +58,10 @@ export const COLD_OPEN: MissionDef = {
       line: '指揮部：直升機四分鐘後到。守住你手上的。',
       trigger: { kind: 'survive', seconds: 30 },
       waves: [
-        { spawn: vec3(9, 0.1, 6), post: vec3(9, 0.1, 6), count: 1, interval: 14.4, endless: true, archetypes: ['rifleman'] },
+        { spawn: vec3(10, 0.1, -11), post: vec3(10, 0.1, -11), count: 1, interval: 14.4, endless: true, archetypes: ['rifleman'] },
         {
-          spawn: vec3(-9, 0.1, -6),
-          post: vec3(-9, 0.1, -6),
+          spawn: vec3(-11, 0.1, 10),
+          post: vec3(-11, 0.1, 10),
           count: 1,
           interval: 17.6,
           delay: 5,
