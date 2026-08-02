@@ -972,14 +972,41 @@ export class BrushCollisionWorld implements CollisionWorld {
 
     if (!mtv) return true;
 
+    /*
+     * Sideways is not the only way out of a cylinder.
+     *
+     * This used to return a radial escape unconditionally, which reads as
+     * reasonable and makes every cylinder in the game unclimbable. The escape
+     * vector becomes the contact normal, and `tryStepUp` accepts a step only if
+     * the surface it lands on faces upward — so dropping onto the top of a
+     * cylinder reported a horizontal normal, the step was rejected as a wall,
+     * and the player stopped dead at the rim of something ankle-high. Boxes have
+     * had the up-and-down candidates all along; cylinders never did.
+     *
+     * Highrise's helipad is a twenty-two metre cylinder in the middle of the
+     * map. Nothing could get onto it — not a bot, not a player — so the map's
+     * centrepiece was scenery, and the final mission, whose last two objectives
+     * are both on that surface, could not be completed by anyone.
+     *
+     * Same candidates and the same bias as the box path, for the same reason:
+     * preferring the top face when it is close is what turns a low cylinder into
+     * something you stand on rather than something you are shoved off.
+     */
     const dist = Math.sqrt(distSq);
-    if (dist < 1e-5) {
-      // Dead centre: pick an arbitrary but stable direction.
-      v3set(mtv, reach, 0, 0);
-      return true;
+    const pushRadial = reach - dist;
+    const pushUp = Math.max(0, cylTop - segBottom);
+    const pushDown = Math.max(0, segTop - cylBottom);
+    const weightedUp = pushUp * 0.6;
+
+    // Dead centre has no radial direction to normalise, so it must go vertical.
+    if (dist >= 1e-5 && pushRadial <= weightedUp && pushRadial <= pushDown) {
+      const push = pushRadial + 0.001;
+      v3set(mtv, (dx / dist) * push, 0, (dz / dist) * push);
+    } else if (weightedUp <= pushDown) {
+      v3set(mtv, 0, pushUp + 0.001, 0);
+    } else {
+      v3set(mtv, 0, -(pushDown + 0.001), 0);
     }
-    const push = reach - dist + 0.001;
-    v3set(mtv, (dx / dist) * push, 0, (dz / dist) * push);
     return true;
   }
 

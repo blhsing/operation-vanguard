@@ -133,7 +133,7 @@ function runMission(mission: MissionDef, seed = 7): Run {
  * not, and pretending otherwise by loosening the assertion until it passes is
  * the one thing this suite must never do.
  */
-const VERIFIED_COMPLETABLE = CAMPAIGN_MISSIONS.filter((m) => m.id !== 'last_floor');
+const VERIFIED_COMPLETABLE = CAMPAIGN_MISSIONS;
 
 /**
  * Missions whose playthrough is exercised at all.
@@ -387,12 +387,21 @@ describe('every mission', () => {
    * welding the player to it` guarding it. Cold Open finishes now and is in
    * VERIFIED_COMPLETABLE above.
    *
-   * Last Floor still does not, and no longer has this to blame: it stalls on
-   * `mark`, where the stand-in reaches the helipad and will not hold the use key
-   * long enough while taking fire from three sides. That is the objective
-   * working and the stand-in failing it, which is a different piece of work.
+   * Last Floor was recorded here as a separate problem — the stand-in reaching
+   * the helipad and failing to hold the use key under fire from three sides.
+   * That was wrong twice over. It never reached the helipad, and there was no
+   * fire: it stopped eleven metres short with every hostile dead and full health.
+   *
+   * The helipad is a cylinder half a metre proud of the roof deck, against a
+   * step height of forty-two centimetres, so nothing could climb it — and
+   * cylinders returned a sideways contact normal even when you landed on top of
+   * one, so nothing could have climbed it at any height. Both of this mission's
+   * last two objectives stand on that surface. It was not a hard mission; it was
+   * an impossible one, and the map's centrepiece was scenery for everybody.
+   *
+   * All six finish now. `steps up onto a low cylinder instead of stopping at its
+   * rim` in the movement suite is the guard.
    */
-  it.todo('last_floor can be finished (stand-in will not hold `mark` under fire on the helipad)');
 
   /**
    * Three seeds for the same reason the test above uses ten: one run of a

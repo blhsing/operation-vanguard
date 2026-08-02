@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { BrushCollisionWorld } from '../src/shared/collision/brush-collision.js';
 import { CollisionLayer, type QueryFilter } from '../src/shared/collision/collision-types.js';
 import { MOVE, PLAYER_RADIUS, STANCE_HEIGHT, TICK_DT } from '../src/shared/constants.js';
-import { box, ramp, type Brush } from '../src/shared/map/map-types.js';
+import { box, cylinder, ramp, type Brush } from '../src/shared/map/map-types.js';
 import { vec3 } from '../src/shared/math.js';
 import { InputFlag, MoveState, Stance, SurfaceType, Team, type InputCommand } from '../src/shared/types.js';
 import { createEmptyInput } from '../src/shared/types.js';
@@ -167,6 +167,43 @@ describe('collision world', () => {
       startZ - player.position.z,
       'a player grazing a corner at full speed must get past it',
     ).toBeGreaterThan(3);
+  });
+
+  /**
+   * A cylinder shorter than your step is a step, not a wall.
+   *
+   * Boxes have always offered an upward escape when the capsule is near the top
+   * face — that is what turns a wedged player into one standing on a crate.
+   * Cylinders only ever offered a radial one, so landing on top of a cylinder
+   * reported a horizontal contact normal, and the step-up in the movement
+   * controller accepts a step only when the surface it lands on faces upward. A
+   * cylinder was therefore unclimbable at any height, and a player walking at an
+   * ankle-high one stopped dead at its rim.
+   *
+   * Highrise's helipad is a twenty-two metre cylinder in the centre of the map,
+   * and this is why nothing could get onto it — which made the final campaign
+   * mission, whose last two objectives both stand on that surface, impossible
+   * rather than difficult.
+   */
+  it('steps up onto a low cylinder instead of stopping at its rim', () => {
+    const world = new BrushCollisionWorld(
+      [
+        box(vec3(0, -0.5, 0), vec3(60, 1, 60), SurfaceType.Concrete),
+        // 0.3 m tall, comfortably under MOVE.stepHeight.
+        cylinder(vec3(0, 0.15, 0), 6, 0.3, SurfaceType.Concrete, { segments: 24 }),
+      ],
+      { min: vec3(-30, -5, -30), max: vec3(30, 20, 30) },
+    );
+
+    const player = makePlayer(0, 0.2, 12);
+    // yaw 0 faces -Z, straight at the cylinder.
+    simulate(player, world, input({ moveForward: 1, yaw: 0 }), 2.5);
+
+    expect(
+      player.position.y,
+      `a player walked into a ${MOVE.stepHeight > 0.3 ? 'steppable' : 'tall'} cylinder and never got on top of it`,
+    ).toBeGreaterThan(0.25);
+    expect(Math.abs(player.position.z), 'should have walked onto the disc').toBeLessThan(6);
   });
 });
 

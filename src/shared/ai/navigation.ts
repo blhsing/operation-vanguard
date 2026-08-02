@@ -19,7 +19,7 @@
  * level, which is what stops them walking into doorframes.
  */
 
-import { PLAYER_RADIUS, STANCE_HEIGHT } from '../constants.js';
+import { MOVE, PLAYER_RADIUS, STANCE_HEIGHT } from '../constants.js';
 import {
   v3distance,
   v3distanceXZ,
@@ -438,7 +438,37 @@ export class NavGraph {
       const next = vec3(tx, groundY + 0.05, tz);
       v3sub(_delta, next, _probe);
       collision.sweepCapsule(_probe, STANCE_HEIGHT.crouch, PLAYER_RADIUS, _delta, NAV_FILTER, _sweep);
-      if (_sweep.hit && _sweep.fraction < 0.92) return false;
+      if (_sweep.hit && _sweep.fraction < 0.92) {
+        /*
+         * Blocked flat — but a player would step over it, so try that.
+         *
+         * This sweep walks the capsule along the floor, and the movement
+         * controller does not: it lifts by `MOVE.stepHeight`, moves, and settles.
+         * Without that, every curb shorter than a step reads as a wall here. A
+         * kerb the player strolls over becomes an edge the graph refuses, the
+         * surface beyond it becomes its own component, and `keepLargestComponent`
+         * deletes it.
+         *
+         * Highrise's helipad is exactly that: a platform four hundred millimetres
+         * above the roof deck, against a step height of four hundred and twenty.
+         * Every one of its sample points was standable, every one was pruned, and
+         * the mission that ends by standing on it could not be finished by
+         * anything that navigates — the stand-in walked to the nearest surviving
+         * node, eleven metres short, and stopped, because it had arrived.
+         *
+         * Retried rather than replacing the flat sweep, so this can only ever add
+         * an edge the movement code would honour. It cannot disconnect anything
+         * that already works.
+         */
+        if (rise > MOVE.stepHeight) return false;
+        const lifted = vec3(_probe.x, next.y, _probe.z);
+        if (!collision.isCapsuleFree(lifted, STANCE_HEIGHT.crouch, PLAYER_RADIUS, NAV_FILTER)) {
+          return false;
+        }
+        v3sub(_delta, next, lifted);
+        collision.sweepCapsule(lifted, STANCE_HEIGHT.crouch, PLAYER_RADIUS, _delta, NAV_FILTER, _sweep);
+        if (_sweep.hit && _sweep.fraction < 0.92) return false;
+      }
 
       v3set(_probe, next.x, next.y, next.z);
     }

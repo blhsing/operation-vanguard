@@ -186,6 +186,21 @@ function buildGeometry(): Brush[] {
   // --- centre: the helipad deck -------------------------------------------
   // Raised by half a metre, no cover on it, painted target in the middle. It is
   // the shortest route between the towers and it will get you killed.
+  //
+  // The plinth is not decoration. Half a metre in one step is eight centimetres
+  // taller than `MOVE.stepHeight`, so the pad was a twenty-two metre cylinder in
+  // the middle of the map that nothing could climb: a player walking at it from
+  // either side stopped dead at the lip, and every one of the nav samples on top
+  // of it was pruned as an unreachable island. Both of the final mission's last
+  // two objectives are on that surface, which made Last Floor impossible for
+  // anyone, and the map's whole argument — that the centre is the fast, lethal
+  // route between the towers — was describing a place you could only look at.
+  //
+  // Two steps of a quarter-metre each, with a metre of tread between them, keeps
+  // the authored height and the silhouette and makes the thing walkable.
+  b.push(cylinder(vec3(0, 0.125, 0), 12, 0.25, SurfaceType.Concrete, {
+    color: 0x66635e, segments: 24, castShadow: false,
+  }));
   b.push(cylinder(vec3(0, 0.25, 0), 11, 0.5, SurfaceType.Concrete, {
     color: 0x6e6b66, segments: 24, castShadow: false,
   }));
