@@ -1,109 +1,97 @@
-# Operation Vanguard
+# 先鋒行動 Operation Vanguard
 
-A Call of Duty–style multiplayer FPS that runs entirely in a browser tab.
+一款完全在瀏覽器分頁中執行的《決勝時刻》風格多人第一人稱射擊遊戲。
 
-**[▶ Play it](https://blhsing.github.io/operation-vanguard/)** — no download, no plugin, no install.
+**[▶ 立即遊玩](https://blhsing.github.io/operation-vanguard/)** — 免下載、免外掛、免安裝。
 
 ---
 
-## What it is
+## 這是什麼
 
-A complete arena shooter: six three-lane maps, a 36-weapon arsenal with
-attachments, create-a-class, perks, killstreaks, ranked progression, and bots
-that have to actually see you before they can shoot you.
+一款完整的競技射擊遊戲：六張三線地圖、36 把武器與配件系統、自訂兵種、特技、
+連殺獎勵、軍階進度，以及必須真的先看見你才能開槍的電腦兵。
 
-The maps are Crossfire (village crossroads), Refinery (industrial), Shipment
-Yard (tiny, relentless), Highrise (two towers and an open roof), Dust Market
-(a bazaar at noon) and Subway (an underground station with no sky at all).
+六張地圖分別是「交叉火力」（村莊十字路口）、「煉油廠」（工業區）、「貨櫃場」
+（狹小而殘酷）、「高樓」（兩棟塔樓與開闊屋頂）、「沙塵市集」（正午的市集）
+與「地鐵」（完全沒有天空的地下車站）。
 
-Plus **Zombies** — round-based co-op survival with a points economy, wall buys,
-the Mystery Box, Pack-a-Punch, perk machines, and a down-and-revive loop.
+另有 **殭屍模式** — 回合制合作生存，包含點數經濟、牆上購買、神秘箱、
+Pack-a-Punch 強化機、特技販賣機，以及倒地與救援的循環。
 
-And a six-mission **Campaign**, one mission per map, with a squad that follows
-you, scripted objectives, and checkpoints that re-enact the fight you lost rather
-than restoring a snapshot of it. A mission is a dependency graph of objectives
-declared as data and interpreted by one runtime — the same shape as the objective
-engine that drives the five competitive modes.
+以及六關 **戰役**，每張地圖一關，配有會跟隨你的小隊、腳本化目標，還有會「重演」
+你打輸的那場戰鬥、而非還原當時世界快照的檢查點。一個任務是一張以資料宣告的目標
+相依圖，由單一執行環境解讀 — 與驅動五種競技模式的目標引擎是同一個形狀。
 
-The interface is in **Traditional Chinese** (zh-Hant-TW), using system CJK fonts
-so the zero-binary-assets rule survives localisation.
+介面語言為 **正體中文**（zh-Hant-TW），使用系統內建的中日韓字型，
+因此「零二進位資產」這條規則在在地化之後依然成立。
 
-It ships **zero binary assets**. Every texture, weapon model, character, sound
-effect and map is generated from code at runtime. The entire game — geometry,
-audio, art — is about 220 kB gzipped.
+本專案 **不含任何二進位資產**。每一張貼圖、每一把武器模型、每一個角色、
+每一段音效與每一張地圖，都是在執行時由程式碼生成的。整個遊戲 — 幾何、音訊、
+美術 — 壓縮後約 220 kB。
 
-## The interesting parts
+## 值得一看的部分
 
-**One simulation, no renderer.** `GameSimulation` is transport-agnostic and has
-no dependency on three.js, so it runs headless in Node — which is how the test
-suite plays entire matches and entire campaign missions with nothing attached to
-the screen.
+**一套模擬，不需要渲染器。** `GameSimulation` 與傳輸層無關，也不相依 three.js，
+因此可以在 Node 中無畫面執行 — 測試套件正是這樣把整場對戰與整關戰役跑完的，
+螢幕上什麼都不用接。
 
-That is also what makes a dedicated server a bounded piece of work rather than a
-rewrite, and it is worth being precise about what exists: **there is no server
-and no networking today.** There is no `src/server/`, `ws` is an unused
-dependency, and the `NET` constants in `constants.ts` — protocol version, port,
-interest radius, input batching — are a design nobody has implemented yet. Every
-mode in the menu is fully playable and populated entirely by bots.
+這也讓「獨立伺服器」成為一件範圍明確的工作，而不是一次重寫。不過有一點必須講清楚：
+**目前沒有伺服器，也沒有任何網路連線功能。** 沒有 `src/server/`，`ws` 是一個
+沒有被引用的相依套件，而 `constants.ts` 裡的 `NET` 常數 — 協定版本、連接埠、
+興趣半徑、輸入批次 — 是一份還沒有人實作的設計。選單裡的每一種模式都可以完整遊玩，
+而對手全部都是電腦兵。
 
-**Presentation is downstream and one-directional.**
+**呈現層在下游，而且是單向的。**
 
 ```
-input ──▶ simulation ──▶ events ──┬──▶ renderer
-               │                  ├──▶ audio
-               └──▶ world state ──┴──▶ HUD
+輸入 ──▶ 模擬 ──▶ 事件 ──┬──▶ 渲染器
+          │              ├──▶ 音訊
+          └──▶ 世界狀態 ──┴──▶ HUD
 ```
 
-Nothing on the right ever writes to the left. That is why the test suite can run
-whole matches — bots, ballistics, collision, mode rules — with no renderer
-attached, and catch "everything compiles and nothing happens".
+右邊永遠不會寫回左邊。這就是為什麼測試套件能夠在沒有渲染器的情況下跑完整場對戰 —
+電腦兵、彈道、碰撞、模式規則 — 並且抓得到「全部都能編譯，但什麼事都沒發生」
+這種錯誤。
 
-**Maps are code, not data files.** A map is convex brushes plus semantic
-annotations, authored in TypeScript from a shared prop kit whose dimensions are
-derived from the movement constants. A 1.0 m crate is mantleable because
-`MANTLE.maxHeight` says so, not because it looked about right. `validateMap()`
-builds a real collision world and runs real queries against it, which is how it
-caught three spawn clusters embedded in a wall on the first map.
+**地圖是程式碼，不是資料檔。** 一張地圖是凸筆刷加上語意標註，以 TypeScript 撰寫，
+使用一組共用的道具套件，而這套道具的尺寸是從移動常數推導出來的。一個 1.0 公尺高的
+木箱之所以翻得過去，是因為 `MANTLE.maxHeight` 這麼說，而不是因為看起來差不多。
+`validateMap()` 會建立一個真正的碰撞世界並對它下真正的查詢 — 第一張地圖上有三組
+重生點嵌在牆裡，就是這樣抓到的。
 
-**Bots lose like people.** Difficulty changes reaction time, aim error, turn
-speed and target leading — never damage. A Recruit and a Veteran fire the same
-guns for the same damage. Aim error is a slowly-drifting bias rather than
-per-tick noise, because white noise averages out over a burst and makes bots
-uncannily accurate at sustained fire; a persistent offset reproduces the human
-pattern of missing one way and then correcting.
+**電腦兵輸得像人。** 難度改變的是反應時間、瞄準誤差、轉身速度與提前量 —
+永遠不是傷害。新兵和老兵用同樣的槍、造成同樣的傷害。瞄準誤差是一個緩慢漂移的偏移量，
+而不是每個 tick 的白噪音：白噪音在一個連發之內會互相抵銷，反而讓電腦兵在持續射擊時
+準得詭異；一個持續存在的偏移，才能重現人類「先偏一邊、再修正回來」的模式。
 
-**Zombies reuses everything.** A zombie is an ordinary player entity on
-`Team.Hostile`, driven through the same `InputCommand` a human sends. It collides,
-gets shot with the same per-bone hitboxes, takes wallbang and explosion damage,
-and paths on the same nav graph. There is no separate zombie movement code to
-keep in sync — which also means a zombie can never walk through a door you
-cannot. The one thing it does differently is always know where you are, because
-a horde you can hide from is not a horde.
+**殭屍模式重複使用了一切。** 一隻殭屍就是一個站在 `Team.Hostile` 上的普通玩家實體，
+透過與人類完全相同的 `InputCommand` 驅動。它會碰撞、會被同一套逐骨骼判定框擊中、
+會吃穿牆傷害與爆炸傷害，也走同一張導航圖。沒有另一套要同步維護的殭屍移動程式碼 —
+這也代表殭屍永遠不可能穿過一扇你穿不過的門。它唯一作弊的地方是永遠知道你在哪裡，
+因為一群你躲得掉的殭屍不叫屍潮。
 
-**Balance is enforced, not asserted.** `validateArsenal()` computes real
-time-to-kill for every weapon at every range and fails the build if an assault
-rifle strays outside 250–420 ms at 20 m, if an SMG doesn't fall off past 25 m, or
-if anything at all can body-shot faster than 150 ms. It caught five genuine
-balance breaks while the arsenal was being written.
+**平衡是強制執行的，不是宣稱的。** `validateArsenal()` 會計算每一把武器在每一個距離
+的真實擊殺時間，並在下列情況讓建置失敗：突擊步槍在 20 公尺處偏離 250–420 毫秒、
+衝鋒槍超過 25 公尺後沒有衰減、或任何武器打身體的擊殺時間快於 150 毫秒。
+在武器庫撰寫過程中，它抓到了五個真正的平衡問題。
 
-## Running it
+## 如何執行
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open http://localhost:5173.
+接著開啟 http://localhost:5173。
 
-### Running it with no server at all
-
+### 完全不需要伺服器的執行方式
 
 ```bash
 npm run build:standalone
 ```
 
-Produces an ordinary folder you open straight off the disk in Chrome — no web
-server, no install, no network:
+會產生一個可以直接用 Chrome 從磁碟開啟的普通資料夾 — 不需要網頁伺服器、
+不需要安裝、不需要網路：
 
 ```
 dist-standalone/
@@ -112,107 +100,103 @@ dist-standalone/
   vanguard.js   901 kB
 ```
 
-One rule of `file://` decides the shape of this. A **module** script is fetched
-with CORS semantics, and a `file://` page has an origin of `null`, which fails —
-so `<script type="module" src="…">` never loads. A **classic** script tag is not
-fetched that way and works fine, as do stylesheets and images. So the bundle is
-built as an IIFE and the build strips `type="module"` and `crossorigin` from the
-tag Vite emits.
+`file://` 有一條規則決定了這個結構。**模組**（module）指令碼是以 CORS 語意抓取的，
+而 `file://` 頁面的來源是 `null`，一定不會通過 — 所以
+`<script type="module" src="…">` 永遠載入不了。**傳統**（classic）指令碼標籤不走
+那條路徑，可以正常載入，樣式表與圖片也一樣。因此程式包是以 IIFE 格式建置的，
+並由建置流程把 Vite 產生的標籤上的 `type="module"` 與 `crossorigin` 移除。
 
-Two consequences worth knowing. Rollup cannot code-split a classic bundle, which
-is why there is one `.js` rather than a vendor chunk beside it. And a classic
-script in `<head>` is *not* deferred the way a module script is, so the build adds
-`defer` — without it the app queries the DOM before `<body>` has been parsed, and
-everything looks right in the markup while nothing works.
+有兩個後果值得知道。Rollup 無法對傳統程式包做程式碼分割，所以旁邊只有一個 `.js`，
+而沒有另外一份 vendor chunk。另外，位於 `<head>` 的傳統指令碼 **不會** 像模組指令碼
+那樣自動延後執行，因此建置流程會補上 `defer` — 少了它，程式會在 `<body>` 被解析之前
+就去查詢 DOM，於是標籤看起來完全正確，實際上什麼都不會動。
 
-Any real asset added later lands in the same folder (or inlined as a data URI
-under 4 kB) and loads fine; today there are none, because every texture, sound,
-model and map is generated from code.
+日後若真的加入了資產檔，它會落在同一個資料夾裡（小於 4 kB 則內嵌成 data URI），
+一樣能正常載入；不過今天一個也沒有，因為所有貼圖、音效、模型與地圖都是由程式碼生成的。
 
-The build then *refuses to emit* a folder that would not run off the disk: a
-surviving module script or `crossorigin`, an absolute path, a referenced file
-that was not written, a top-level `import`/`export`, an undeferred head script,
-or a bundle that no longer parses. A build that works over http and shows a blank
-page off the disk is very easy to produce by accident, and the only way never to
-ship one is to make the build fail instead.
+接著建置流程會 **拒絕輸出** 一個無法從磁碟執行的資料夾：殘留的模組指令碼或
+`crossorigin`、絕對路徑、被引用卻沒有被寫出的檔案、頂層的 `import`/`export`、
+沒有 `defer` 的 head 指令碼，或是一份再也無法解析的程式包。一份「用 http 跑得很好、
+從磁碟開卻只有白畫面」的建置產物，是非常容易不小心做出來的；唯一能保證不出貨的辦法，
+就是讓建置直接失敗。
 
-`npm run verify:standalone` then drives the real thing in real Chrome from a
-`file://` URL over the DevTools protocol: it starts a match through the menu,
-checks the canvas has a live WebGL context and the HUD is counting ammo, and
-screenshots the result. It observes from the outside on purpose — an earlier
-version reached for a development-only debug handle that does not exist in the
-artefact people actually run.
+`npm run verify:standalone` 則會透過 DevTools 協定，在真正的 Chrome 裡以 `file://`
+網址驅動這份產物：它會從選單開始一場對戰，檢查 canvas 是否具備可用的 WebGL context、
+HUD 是否正在計算彈藥，然後截圖。它刻意從外部觀察 — 先前有一版去讀取一個只存在於
+開發模式的除錯控制代碼，而那個東西在使用者真正拿到的產物裡並不存在。
 
 ```bash
-npm test          # headless match simulation + balance + collision + weapon tests
-npm run typecheck # strict, zero errors
-npm run build     # production bundle
+npm test          # 無畫面對戰模擬 + 平衡 + 碰撞 + 武器測試
+npm run typecheck # 嚴格模式，零錯誤
+npm run build     # 正式建置
+npm run check:i18n  # 在地化守衛：檢查漏譯，也檢查誤譯了不該譯的東西
 ```
 
-## Controls
+## 操作
 
 | | |
 |---|---|
-| Move | `W` `A` `S` `D` |
-| Sprint / tactical sprint | `Shift` / tap `Shift` twice |
-| Jump, mantle, vault | `Space` |
-| Crouch / slide | `Ctrl` (while sprinting to slide) |
-| Prone | `Z` |
-| Fire / aim | Left mouse / right mouse |
-| Reload | `R` |
-| Melee | `V` |
-| Swap weapon | `1` `2` |
-| Lethal / tactical | `G` / `Q` |
-| Killstreaks | `3` `4` `5` |
-| Buy / interact (Zombies) | `F` |
-| Scoreboard | `Tab` (hold) |
+| 移動 | `W` `A` `S` `D` |
+| 衝刺／戰術衝刺 | `Shift`／連按兩下 `Shift` |
+| 跳躍、翻越、攀爬 | `Space` |
+| 蹲下／滑鏟 | `Ctrl`（衝刺中按下即為滑鏟） |
+| 趴下 | `Z` |
+| 開火／瞄準 | 滑鼠左鍵／滑鼠右鍵 |
+| 裝填 | `R` |
+| 近戰 | `V` |
+| 切換武器 | `1` `2` |
+| 致命／戰術裝備 | `G`／`Q` |
+| 連殺獎勵 | `3` `4` `5` |
+| 購買／互動（殭屍模式） | `F` |
+| 計分板 | 按住 `Tab` |
 
-A gamepad is detected automatically and uses the standard layout.
+系統會自動偵測遊戲手把，並使用標準配置。
 
-## Layout
+## 專案結構
 
 ```
-src/shared/     the simulation — no three.js, runs in Node and the browser
-  math/         allocation-free vector and angle maths
-  collision/    exact convex-brush collision over a spatial hash
-  sim/          movement, weapons, combat, spawns, the tick loop
-  data/         weapons, attachments, perks, killstreaks, equipment, modes
-  map/          brush format, prop kit, maps, validation
-  ai/           navigation graph and bot behaviour
-  zombies/      round curve, horde director, economy, per-map layouts
-  campaign/     mission data model, objective graph runtime, six missions
-src/client/     everything that presents it
-  scene/        renderer, viewmodel rig, entity rendering
-  render/       procedural textures, materials, models, map geometry
-  audio/        procedural Web Audio synthesis
-  hud/          HUD and minimap
-tests/          headless match, movement, weapon and data-integrity tests
+src/shared/     模擬本體 — 不含 three.js，可在 Node 與瀏覽器中執行
+  math/         零配置的向量與角度運算
+  collision/    以空間雜湊為基礎的精確凸筆刷碰撞
+  sim/          移動、武器、戰鬥、重生、tick 迴圈
+  data/         武器、配件、特技、連殺獎勵、裝備、模式
+  map/          筆刷格式、道具套件、地圖、驗證
+  ai/           導航圖與電腦兵行為
+  zombies/      回合曲線、屍潮總監、經濟系統、各地圖佈局
+  campaign/     任務資料模型、目標圖執行環境、六關任務
+src/client/     所有負責呈現的部分
+  scene/        渲染器、第一人稱武器骨架、實體渲染
+  render/       程序化貼圖、材質、模型、地圖幾何
+  audio/        程序化 Web Audio 合成
+  hud/          HUD 與小地圖
+tests/          無畫面對戰、移動、武器與資料完整性測試
+tools/          soak 測試、導航／掩體報告、在地化守衛、standalone 驗證
 ```
 
-## Design notes
+## 設計筆記
 
-A few decisions that are load-bearing and non-obvious:
+幾個關鍵而不直觀的決定：
 
-- **Firing is gated by a timestamp, not a countdown.** A countdown quantises
-  rate of fire to the tick rate and makes a 900 RPM gun and an 850 RPM gun behave
-  identically.
-- **Ground detection cannot use "is my vertical velocity positive?"** Walking up
-  a ramp produces upward velocity, and a sprinted slope walk exceeds jump
-  velocity, so the two are not separable by magnitude. An explicit post-jump
-  lockout is the only honest discriminator.
-- **Respawn delay is flat.** An earlier version escalated it with consecutive
-  deaths as an anti-spawn-trap measure, which had it backwards: it punished the
-  player being trapped. Spawn-trapping is the influence map's problem.
-- **Nav graph edges are short.** Long edges must survive every intermediate
-  walkability probe, so raising the connection radius *reduces* connectivity —
-  one clipped doorframe twenty metres away kills the whole link.
-- **The zombie round curve caps speed but not health.** An uncapped speed curve
-  does not make the game progressively harder, it picks one round to become
-  unplayable and is identical before that.
-- **Events are handed over at the end of a tick, not cleared at the start.**
-  Clearing first silently discarded anything emitted *between* ticks, so a mode
-  calling `damagePlayer` directly lost every event it caused.
+- **開火由時間戳決定，而不是倒數計時器。** 倒數會把射速量化到 tick 頻率上，
+  讓一把 900 RPM 的槍和一把 850 RPM 的槍表現得一模一樣。
+- **落地判定不能用「垂直速度是不是正的」。** 走上斜坡會產生向上的速度，
+  而衝刺上坡的速度甚至超過跳躍初速，所以兩者無法用大小區分。
+  唯一誠實的判準是一個明確的「跳躍後鎖定期」。
+- **重生延遲是固定的。** 早期版本會隨著連續死亡次數遞增，作為反制重生點壓制的手段，
+  但這完全搞反了：它懲罰的是被壓制的那一方。重生點壓制是影響力地圖要解決的問題。
+- **導航圖的邊要短。** 長邊必須通過沿途每一次可行走性探測，
+  所以把連線半徑調大反而會 *降低* 連通性 — 二十公尺外一道被卡住的門框，
+  就足以讓整條連線消失。
+- **殭屍回合曲線限制速度，但不限制血量。** 沒有上限的速度曲線不會讓遊戲逐步變難，
+  它只會挑一個回合突然變得無法遊玩，而在那之前完全沒有差別。
+- **事件是在 tick 結束時交出去的，不是在開始時清空的。** 先清空會靜靜地丟掉
+  在兩個 tick *之間* 送出的所有事件，於是任何直接呼叫 `damagePlayer` 的模式，
+  都會失去它所造成的每一個事件。
+- **導航取樣密度會隨地圖大小調整。** 固定三公尺的網格適合八十公尺的地圖，
+  用在三十六公尺的貨櫃迷宮上卻是災難：可走的縫隙只有兩公尺寬，網格會整個跨過去、
+  落在貨櫃頂上。「貨櫃場」就這樣出貨過 — 導航圖是一圈空心的外環，
+  地圖中央對每一個電腦兵而言都不存在。
 
-## Licence
+## 授權
 
-MIT.
+MIT。
