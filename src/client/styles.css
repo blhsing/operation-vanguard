@@ -22,8 +22,38 @@
   --edge: rgba(233, 238, 244, 0.14);
   --hud-scale: 1;
 
-  --font-ui: 'Rajdhani', 'DIN Alternate', 'Roboto Condensed', system-ui, -apple-system, sans-serif;
-  --font-num: 'DIN Alternate', 'Roboto Mono', ui-monospace, 'SF Mono', monospace;
+  /*
+   * Latin faces first, Traditional Chinese after.
+   *
+   * Order is load-bearing. A browser walks the stack per *character*, so the
+   * Latin condensed faces still shape the numerals and the few remaining Latin
+   * strings — magazine counts, weapon designations — while every Han character
+   * falls through to the system CJK face. Putting the CJK font first would
+   * hand it the digits too, and its numerals are a different width and weight
+   * from the rest of the HUD.
+   *
+   * The game ships zero binary assets and that is not being broken for this, so
+   * these are all system fonts: PingFang on Apple, JhengHei on Windows, Noto
+   * everywhere else. A machine with no Traditional Chinese face installed falls
+   * back to whatever sans-serif it has, which will render Han characters if the
+   * OS has any CJK support at all and show tofu if it genuinely has none.
+   */
+  --font-cjk: 'PingFang TC', 'Microsoft JhengHei UI', 'Microsoft JhengHei',
+    'Noto Sans CJK TC', 'Noto Sans TC', 'Source Han Sans TC', 'Heiti TC', 'PMingLiU';
+  /*
+   * Tracking scale.
+   *
+   * The HUD's military look came partly from wide letter-spacing, which is a
+   * Latin typographic device: it opens up the gaps between narrow glyphs. Han
+   * characters are already full-width and evenly spaced by construction, so the
+   * same values read as a caption that has come apart — 先 鋒 行 動 rather than
+   * 先鋒行動. Every spacing below is expressed against this scale so the whole
+   * interface can be retuned from one number.
+   */
+  --track: 0.42;
+  --font-ui: 'Rajdhani', 'DIN Alternate', 'Roboto Condensed', var(--font-cjk), system-ui,
+    -apple-system, sans-serif;
+  --font-num: 'DIN Alternate', 'Roboto Mono', ui-monospace, 'SF Mono', var(--font-cjk), monospace;
 }
 
 * {
@@ -79,7 +109,7 @@ canvas#game {
   display: flex;
   flex-direction: column;
   align-items: center;
-  letter-spacing: 0.42em;
+  letter-spacing: calc(0.42em * var(--track));
 }
 
 .boot-op {
@@ -112,7 +142,7 @@ canvas#game {
 
 .boot-status {
   font-size: 12px;
-  letter-spacing: 0.22em;
+  letter-spacing: calc(0.22em * var(--track));
   color: var(--ink-dim);
   text-transform: uppercase;
 }
@@ -382,7 +412,7 @@ canvas#game {
 .hud-timer {
   font-family: var(--font-num);
   font-size: 1.25em;
-  letter-spacing: 0.06em;
+  letter-spacing: calc(0.06em * var(--track));
 }
 
 .hud-timer.is-urgent {
@@ -398,7 +428,7 @@ canvas#game {
 
 .hud-mode {
   font-size: 0.6em;
-  letter-spacing: 0.24em;
+  letter-spacing: calc(0.24em * var(--track));
   color: var(--ink-dim);
 }
 
@@ -425,7 +455,7 @@ canvas#game {
   flex: 0 0 44px;
   text-align: center;
   font-size: 0.62em;
-  letter-spacing: 0.12em;
+  letter-spacing: calc(0.12em * var(--track));
   color: var(--ink-dim);
   border-left: 1px solid rgba(233, 238, 244, 0.18);
   height: 20px;
@@ -487,7 +517,7 @@ canvas#game {
   background: rgba(6, 8, 11, 0.62);
   padding: 3px 9px;
   font-size: 0.78em;
-  letter-spacing: 0.03em;
+  letter-spacing: calc(0.03em * var(--track));
   border-left: 2px solid transparent;
   animation: killfeed-in 0.18s ease-out;
   white-space: nowrap;
@@ -536,7 +566,7 @@ canvas#game {
 .hud-xp-entry {
   font-family: var(--font-num);
   font-size: 0.82em;
-  letter-spacing: 0.08em;
+  letter-spacing: calc(0.08em * var(--track));
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
   animation: xp-rise 0.4s ease-out;
 }
@@ -565,7 +595,7 @@ canvas#game {
   transform: translateX(-50%);
   font-size: 1.5em;
   font-weight: 700;
-  letter-spacing: 0.24em;
+  letter-spacing: calc(0.24em * var(--track));
   color: var(--accent);
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
   opacity: 0;
@@ -589,7 +619,7 @@ canvas#game {
 
 .hud-weapon-name {
   font-size: 0.82em;
-  letter-spacing: 0.16em;
+  letter-spacing: calc(0.16em * var(--track));
   color: var(--ink-dim);
   text-transform: uppercase;
 }
@@ -628,14 +658,14 @@ canvas#game {
 
 .hud-firemode {
   font-size: 0.62em;
-  letter-spacing: 0.2em;
+  letter-spacing: calc(0.2em * var(--track));
   color: var(--ink-dim);
 }
 
 .hud-equipment {
   margin-top: 5px;
   font-size: 0.85em;
-  letter-spacing: 0.14em;
+  letter-spacing: calc(0.14em * var(--track));
   color: var(--ink-dim);
 }
 
@@ -678,7 +708,7 @@ canvas#game {
   align-items: center;
   gap: 7px;
   font-size: 0.7em;
-  letter-spacing: 0.12em;
+  letter-spacing: calc(0.12em * var(--track));
   background: rgba(6, 8, 11, 0.6);
   padding: 3px 8px;
   border-left: 2px solid var(--accent);
@@ -712,7 +742,7 @@ canvas#game {
 
 .respawn-label {
   font-size: 0.8em;
-  letter-spacing: 0.28em;
+  letter-spacing: calc(0.28em * var(--track));
   color: var(--ink-dim);
 }
 
@@ -746,7 +776,7 @@ canvas#game {
 .sb-team h3 {
   margin: 0 0 8px;
   font-size: 0.86em;
-  letter-spacing: 0.28em;
+  letter-spacing: calc(0.28em * var(--track));
   color: var(--ink-dim);
   font-weight: 600;
 }
@@ -768,7 +798,7 @@ canvas#game {
   text-align: right;
   padding: 3px 9px;
   font-size: 0.82em;
-  letter-spacing: 0.14em;
+  letter-spacing: calc(0.14em * var(--track));
   color: var(--ink-dim);
   font-weight: 500;
   border-bottom: 1px solid var(--edge);
@@ -796,7 +826,7 @@ canvas#game {
 
 .sb-bot {
   font-size: 0.72em;
-  letter-spacing: 0.1em;
+  letter-spacing: calc(0.1em * var(--track));
   color: var(--ink-dim);
   border: 1px solid var(--edge);
   padding: 0 3px;
@@ -871,13 +901,13 @@ canvas#game {
 .menu-title {
   font-size: 30px;
   font-weight: 700;
-  letter-spacing: 0.3em;
+  letter-spacing: calc(0.3em * var(--track));
   margin: 0;
 }
 
 .menu-subtitle {
   font-size: 12px;
-  letter-spacing: 0.24em;
+  letter-spacing: calc(0.24em * var(--track));
   color: var(--ink-dim);
   margin: 4px 0 0;
   text-transform: uppercase;
@@ -906,7 +936,7 @@ canvas#game {
   color: var(--ink);
   font-family: inherit;
   font-size: 15px;
-  letter-spacing: 0.18em;
+  letter-spacing: calc(0.18em * var(--track));
   text-transform: uppercase;
   padding: 12px 16px;
   text-align: left;
@@ -946,7 +976,7 @@ canvas#game {
 .menu-panel h2 {
   margin: 0 0 16px;
   font-size: 15px;
-  letter-spacing: 0.24em;
+  letter-spacing: calc(0.24em * var(--track));
   color: var(--ink-dim);
   font-weight: 600;
   text-transform: uppercase;
@@ -967,7 +997,7 @@ canvas#game {
 
 .field label {
   font-size: 13px;
-  letter-spacing: 0.1em;
+  letter-spacing: calc(0.1em * var(--track));
   color: var(--ink);
 }
 
@@ -975,7 +1005,7 @@ canvas#game {
   grid-column: 1 / -1;
   font-size: 11px;
   color: var(--ink-dim);
-  letter-spacing: 0.04em;
+  letter-spacing: calc(0.04em * var(--track));
   margin-top: -4px;
 }
 
@@ -1019,7 +1049,7 @@ canvas#game {
 
 .menu-hintbar {
   font-size: 11px;
-  letter-spacing: 0.14em;
+  letter-spacing: calc(0.14em * var(--track));
   color: var(--ink-dim);
   margin-right: auto;
   align-self: center;
@@ -1030,7 +1060,7 @@ canvas#game {
 .result-banner {
   font-size: 44px;
   font-weight: 700;
-  letter-spacing: 0.3em;
+  letter-spacing: calc(0.3em * var(--track));
   text-align: center;
   margin: 30px 0 8px;
 }
@@ -1102,7 +1132,7 @@ canvas#game {
 
 .hud-zm-label {
   font-size: 0.55em;
-  letter-spacing: 0.26em;
+  letter-spacing: calc(0.26em * var(--track));
   color: var(--ink-dim);
 }
 
@@ -1123,7 +1153,7 @@ canvas#game {
 
 .hud-zm-remaining {
   font-size: 0.62em;
-  letter-spacing: 0.2em;
+  letter-spacing: calc(0.2em * var(--track));
   color: var(--ink-dim);
   align-self: center;
 }
@@ -1136,7 +1166,7 @@ canvas#game {
 .zm-perk {
   font-size: 0.6em;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: calc(0.12em * var(--track));
   padding: 3px 7px;
   border: 1px solid var(--edge);
   background: rgba(6, 8, 11, 0.7);
@@ -1160,7 +1190,7 @@ canvas#game {
   align-items: center;
   gap: 8px;
   font-size: 0.85em;
-  letter-spacing: 0.14em;
+  letter-spacing: calc(0.14em * var(--track));
   background: rgba(6, 8, 11, 0.78);
   padding: 7px 14px;
   border-left: 2px solid var(--accent);
@@ -1210,7 +1240,7 @@ canvas#game {
 .zm-down-label {
   font-size: 1.1em;
   font-weight: 700;
-  letter-spacing: 0.3em;
+  letter-spacing: calc(0.3em * var(--track));
   color: var(--enemy);
   animation: urgent-blink 1.2s steps(2, end) infinite;
 }
@@ -1256,7 +1286,7 @@ canvas#game {
   display: none;
   min-width: calc(220px * var(--hud-scale));
   font-size: calc(13px * var(--hud-scale));
-  letter-spacing: 0.06em;
+  letter-spacing: calc(0.06em * var(--track));
 }
 .hud-campaign.is-visible { display: block; }
 .hud[data-mode='campaign'] .hud-top { display: none; }

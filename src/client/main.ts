@@ -231,7 +231,7 @@ function textField(
   input.type = 'text';
   input.value = value;
   input.maxLength = 20;
-  input.addEventListener('change', () => onChange(input.value.trim() || 'Player'));
+  input.addEventListener('change', () => onChange(input.value.trim() || '玩家'));
   row.appendChild(input);
   row.appendChild(document.createElement('span'));
   return row;
@@ -242,27 +242,27 @@ function textField(
 // ---------------------------------------------------------------------------
 
 function buildMainMenu(): void {
-  const screen = makeScreen('main', 'OPERATION VANGUARD', 'Browser-native tactical shooter');
+  const screen = makeScreen('main', '先鋒行動', '瀏覽器原生戰術射擊遊戲');
   const b = body(screen);
 
   const nav = document.createElement('div');
   nav.className = 'menu-nav';
-  nav.appendChild(button('Play', () => showScreen('play'), true));
-  nav.appendChild(button('Loadout', () => { buildLoadoutScreen(); showScreen('loadout'); }));
-  nav.appendChild(button('Settings', () => { buildSettingsScreen(); showScreen('settings'); }));
-  nav.appendChild(button('Controls', () => { buildControlsScreen(); showScreen('controls'); }));
+  nav.appendChild(button('開始遊戲', () => showScreen('play'), true));
+  nav.appendChild(button('配裝', () => { buildLoadoutScreen(); showScreen('loadout'); }));
+  nav.appendChild(button('設定', () => { buildSettingsScreen(); showScreen('settings'); }));
+  nav.appendChild(button('操作', () => { buildControlsScreen(); showScreen('controls'); }));
   b.appendChild(nav);
 
-  const info = panel('Briefing');
+  const info = panel('簡報');
   info.innerHTML += `
     <p style="color:var(--ink-dim);line-height:1.7;font-size:13px;max-width:52ch">
-      A full multiplayer shooter that runs entirely in your browser. No downloads,
-      no plugins, and not a single binary asset — every texture, weapon model,
-      sound and map is generated from code at runtime.
+      完全在瀏覽器中執行的多人射擊遊戲。不用下載、不用外掛，
+      也沒有任何一個二進位資產——所有貼圖、武器模型、音效與地圖，
+      都在執行時由程式碼生成。
     </p>
-    <div class="field"><label>Rank</label><span></span><span class="value">${profile.rank}</span></div>
-    <div class="field"><label>Career kills</label><span></span><span class="value">${profile.stats.kills}</span></div>
-    <div class="field"><label>Matches played</label><span></span><span class="value">${profile.stats.matches}</span></div>
+    <div class="field"><label>軍階</label><span></span><span class="value">${profile.rank}</span></div>
+    <div class="field"><label>生涯擊殺</label><span></span><span class="value">${profile.stats.kills}</span></div>
+    <div class="field"><label>對戰場數</label><span></span><span class="value">${profile.stats.matches}</span></div>
   `;
   b.appendChild(info);
 }
@@ -270,17 +270,17 @@ function buildMainMenu(): void {
 function buildPlayScreen(): void {
   screens.get('play')?.remove();
   screens.delete('play');
-  const screen = makeScreen('play', 'PLAY', 'Configure the match');
+  const screen = makeScreen('play', '開始遊戲', '設定本場對戰');
   const b = body(screen);
   b.innerHTML = '';
 
   const nav = document.createElement('div');
   nav.className = 'menu-nav';
-  nav.appendChild(button('Start match', () => startMatch(), true));
-  nav.appendChild(button('Back', () => showScreen('main')));
+  nav.appendChild(button('開始對戰', () => startMatch(), true));
+  nav.appendChild(button('返回', () => showScreen('main')));
   b.appendChild(nav);
 
-  const p = panel('Match setup');
+  const p = panel('對戰設定');
 
   const isCampaign = profile.lastMatch.modeId === 'campaign';
 
@@ -288,7 +288,7 @@ function buildPlayScreen(): void {
   if (isCampaign) {
     p.appendChild(
       selectField(
-        'Mission',
+        '任務',
         profile.lastMatch.missionId,
         MISSION_IDS.map((id, i) => ({
           value: id,
@@ -306,7 +306,7 @@ function buildPlayScreen(): void {
   } else {
     p.appendChild(
       selectField(
-        'Map',
+        '地圖',
         profile.lastMatch.mapId,
         MAP_IDS.map((id) => ({ value: id, label: getMap(id).name })),
         (v) => {
@@ -329,7 +329,7 @@ function buildPlayScreen(): void {
 
   p.appendChild(
     selectField(
-      'Mode',
+      '模式',
       profile.lastMatch.modeId,
       availableModes.map((id) => ({ value: id, label: getMode(id).name })),
       (v) => {
@@ -344,7 +344,7 @@ function buildPlayScreen(): void {
 
   if (!isCampaign) p.appendChild(
     sliderField(
-      profile.lastMatch.modeId === ZOMBIES_MODE_ID ? 'Co-op partners' : 'Bots',
+      profile.lastMatch.modeId === ZOMBIES_MODE_ID ? '合作隊友' : '電腦兵',
       profile.lastMatch.botCount,
       0,
       profile.lastMatch.modeId === ZOMBIES_MODE_ID ? 3 : 17,
@@ -354,25 +354,25 @@ function buildPlayScreen(): void {
         profile.lastMatch.botCount = v;
         saveProfile(profile);
       },
-      'More bots means a busier match and a heavier CPU load.',
+      '電腦兵越多，戰場越熱鬧，CPU負擔也越重。',
     ),
   );
 
   p.appendChild(
     selectField(
-      'Bot difficulty',
+      '電腦兵難度',
       profile.lastMatch.difficulty,
       Object.keys(DIFFICULTIES).map((k) => ({ value: k, label: DIFFICULTIES[k]!.name })),
       (v) => {
         profile.lastMatch.difficulty = v;
         saveProfile(profile);
       },
-      'Difficulty changes reaction time and aim, never damage.',
+      '難度只改變反應時間與準度，不會改變傷害。',
     ),
   );
 
   p.appendChild(
-    textField('Callsign', profile.name, (v) => {
+    textField('呼號', profile.name, (v) => {
       profile.name = v;
       saveProfile(profile);
     }),
@@ -385,36 +385,36 @@ function buildSettingsScreen(): void {
   screens.get('settings')?.remove();
   screens.delete('settings');
 
-  const screen = makeScreen('settings', 'SETTINGS', 'Video, audio and gameplay');
+  const screen = makeScreen('settings', '設定', '影像、音效與遊戲設定');
   const b = body(screen);
 
   const nav = document.createElement('div');
   nav.className = 'menu-nav';
-  nav.appendChild(button('Back', () => showScreen(client ? 'pause' : 'main')));
+  nav.appendChild(button('返回', () => showScreen(client ? 'pause' : 'main')));
   b.appendChild(nav);
 
   const wrap = document.createElement('div');
 
   // --- video --------------------------------------------------------------
-  const video = panel('Video');
+  const video = panel('影像');
   const r = profile.settings.render;
 
   video.appendChild(
-    sliderField('Field of view', r.fov, 65, 120, 1, (v) => `${v}°`, (v) => {
+    sliderField('視野', r.fov, 65, 120, 1, (v) => `${v}°`, (v) => {
       r.fov = v;
       applyLiveSettings();
-    }, 'Higher values show more of the world and make targets smaller.'),
+    }, '數值越高，看到的範圍越廣，目標也越小。'),
   );
 
   video.appendChild(
     selectField<QualityTier>(
-      'Quality',
+      '畫質',
       r.quality,
       [
-        { value: 'low', label: 'Low' },
-        { value: 'medium', label: 'Medium' },
-        { value: 'high', label: 'High' },
-        { value: 'ultra', label: 'Ultra' },
+        { value: 'low', label: '低' },
+        { value: 'medium', label: '中' },
+        { value: 'high', label: '高' },
+        { value: 'ultra', label: '極高' },
       ],
       (v) => {
         r.quality = v;
@@ -424,16 +424,16 @@ function buildSettingsScreen(): void {
   );
 
   video.appendChild(
-    sliderField('Render scale', r.resolutionScale, 0.5, 1, 0.05, (v) => `${Math.round(v * 100)}%`, (v) => {
+    sliderField('算繪比例', r.resolutionScale, 0.5, 1, 0.05, (v) => `${Math.round(v * 100)}%`, (v) => {
       r.resolutionScale = v;
       applyLiveSettings();
-    }, 'The cheapest way to gain frames on a slow machine.'),
+    }, '在效能不佳的機器上，這是換取幀數最划算的做法。'),
   );
 
-  video.appendChild(toggleField('Shadows', r.shadows, (v) => { r.shadows = v; applyLiveSettings(); }));
-  video.appendChild(toggleField('Show FPS', r.showFps, (v) => { r.showFps = v; applyLiveSettings(); }));
+  video.appendChild(toggleField('陰影', r.shadows, (v) => { r.shadows = v; applyLiveSettings(); }));
+  video.appendChild(toggleField('顯示FPS', r.showFps, (v) => { r.showFps = v; applyLiveSettings(); }));
   video.appendChild(
-    sliderField('Brightness', r.brightness, 0.6, 1.6, 0.05, (v) => v.toFixed(2), (v) => {
+    sliderField('亮度', r.brightness, 0.6, 1.6, 0.05, (v) => v.toFixed(2), (v) => {
       r.brightness = v;
       applyLiveSettings();
     }),
@@ -441,21 +441,21 @@ function buildSettingsScreen(): void {
   wrap.appendChild(video);
 
   // --- audio --------------------------------------------------------------
-  const audio = panel('Audio');
+  const audio = panel('音效');
   audio.appendChild(
-    sliderField('Master', profile.settings.masterVolume, 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`, (v) => {
+    sliderField('主音量', profile.settings.masterVolume, 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`, (v) => {
       profile.settings.masterVolume = v;
       applyLiveSettings();
     }),
   );
   audio.appendChild(
-    sliderField('Effects', profile.settings.sfxVolume, 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`, (v) => {
+    sliderField('效果音', profile.settings.sfxVolume, 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`, (v) => {
       profile.settings.sfxVolume = v;
       applyLiveSettings();
     }),
   );
   audio.appendChild(
-    sliderField('Music', profile.settings.musicVolume, 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`, (v) => {
+    sliderField('音樂', profile.settings.musicVolume, 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`, (v) => {
       profile.settings.musicVolume = v;
       applyLiveSettings();
     }),
@@ -463,97 +463,97 @@ function buildSettingsScreen(): void {
   wrap.appendChild(audio);
 
   // --- gameplay -----------------------------------------------------------
-  const gameplay = panel('Gameplay');
+  const gameplay = panel('遊戲');
   const inp = profile.settings.input;
 
   gameplay.appendChild(
-    sliderField('Mouse sensitivity', inp.sensitivity, 0.1, 4, 0.05, (v) => v.toFixed(2), (v) => {
+    sliderField('滑鼠靈敏度', inp.sensitivity, 0.1, 4, 0.05, (v) => v.toFixed(2), (v) => {
       inp.sensitivity = v;
       applyLiveSettings();
     }),
   );
   gameplay.appendChild(
-    sliderField('ADS sensitivity', inp.adsSensitivityScale, 0.2, 1.5, 0.05, (v) => v.toFixed(2), (v) => {
+    sliderField('瞄準靈敏度', inp.adsSensitivityScale, 0.2, 1.5, 0.05, (v) => v.toFixed(2), (v) => {
       inp.adsSensitivityScale = v;
       applyLiveSettings();
-    }, 'Relative to hipfire sensitivity while aiming.'),
+    }, '瞄準時相對於腰射靈敏度的倍率。'),
   );
-  gameplay.appendChild(toggleField('Invert vertical look', inp.invertY, (v) => { inp.invertY = v; applyLiveSettings(); }));
-  gameplay.appendChild(toggleField('Toggle aim', inp.toggleAds, (v) => { inp.toggleAds = v; applyLiveSettings(); }));
-  gameplay.appendChild(toggleField('Toggle crouch', inp.toggleCrouch, (v) => { inp.toggleCrouch = v; applyLiveSettings(); }));
-  gameplay.appendChild(toggleField('Automatic sprint', inp.autoSprint, (v) => { inp.autoSprint = v; applyLiveSettings(); }));
+  gameplay.appendChild(toggleField('垂直視角反轉', inp.invertY, (v) => { inp.invertY = v; applyLiveSettings(); }));
+  gameplay.appendChild(toggleField('切換式瞄準', inp.toggleAds, (v) => { inp.toggleAds = v; applyLiveSettings(); }));
+  gameplay.appendChild(toggleField('切換式蹲下', inp.toggleCrouch, (v) => { inp.toggleCrouch = v; applyLiveSettings(); }));
+  gameplay.appendChild(toggleField('自動衝刺', inp.autoSprint, (v) => { inp.autoSprint = v; applyLiveSettings(); }));
   wrap.appendChild(gameplay);
 
   // --- accessibility ------------------------------------------------------
-  const access = panel('Accessibility');
+  const access = panel('輔助功能');
   const h = profile.settings.hud;
   access.appendChild(
     selectField(
-      'Colourblind mode',
+      '色盲模式',
       h.colorblindMode,
       [
-        { value: 'off' as const, label: 'Off' },
-        { value: 'protanopia' as const, label: 'Protanopia' },
-        { value: 'deuteranopia' as const, label: 'Deuteranopia' },
-        { value: 'tritanopia' as const, label: 'Tritanopia' },
+        { value: 'off' as const, label: '關閉' },
+        { value: 'protanopia' as const, label: '紅色盲' },
+        { value: 'deuteranopia' as const, label: '綠色盲' },
+        { value: 'tritanopia' as const, label: '藍色盲' },
       ],
       (v) => {
         h.colorblindMode = v;
         applyLiveSettings();
       },
-      'Remaps the friend/foe colours, the one distinction the game depends on.',
+      '重新配置敵我顏色——這是遊戲唯一仰賴的區分方式。',
     ),
   );
   access.appendChild(
-    sliderField('HUD scale', h.hudScale, 0.75, 1.5, 0.05, (v) => `${Math.round(v * 100)}%`, (v) => {
+    sliderField('HUD縮放', h.hudScale, 0.75, 1.5, 0.05, (v) => `${Math.round(v * 100)}%`, (v) => {
       h.hudScale = v;
       applyLiveSettings();
     }),
   );
-  access.appendChild(toggleField('Show crosshair', h.showCrosshair, (v) => { h.showCrosshair = v; applyLiveSettings(); }));
-  access.appendChild(toggleField('Show minimap', h.showMinimap, (v) => { h.showMinimap = v; applyLiveSettings(); }));
-  access.appendChild(toggleField('Show killfeed', h.showKillfeed, (v) => { h.showKillfeed = v; applyLiveSettings(); }));
-  access.appendChild(toggleField('Show damage numbers', h.showDamageNumbers, (v) => { h.showDamageNumbers = v; applyLiveSettings(); }));
+  access.appendChild(toggleField('顯示準星', h.showCrosshair, (v) => { h.showCrosshair = v; applyLiveSettings(); }));
+  access.appendChild(toggleField('顯示小地圖', h.showMinimap, (v) => { h.showMinimap = v; applyLiveSettings(); }));
+  access.appendChild(toggleField('顯示擊殺訊息', h.showKillfeed, (v) => { h.showKillfeed = v; applyLiveSettings(); }));
+  access.appendChild(toggleField('顯示傷害數字', h.showDamageNumbers, (v) => { h.showDamageNumbers = v; applyLiveSettings(); }));
   wrap.appendChild(access);
 
   b.appendChild(wrap);
 
   const f = footer(screen);
-  f.querySelector('.menu-hintbar')!.textContent = 'Changes apply immediately and are saved automatically';
+  f.querySelector('.menu-hintbar')!.textContent = '變更立即生效並自動儲存';
 }
 
 function buildControlsScreen(): void {
   screens.get('controls')?.remove();
   screens.delete('controls');
 
-  const screen = makeScreen('controls', 'CONTROLS', 'Default bindings');
+  const screen = makeScreen('controls', '操作', '預設按鍵配置');
   const b = body(screen);
 
   const nav = document.createElement('div');
   nav.className = 'menu-nav';
-  nav.appendChild(button('Back', () => showScreen(client ? 'pause' : 'main')));
+  nav.appendChild(button('返回', () => showScreen(client ? 'pause' : 'main')));
   b.appendChild(nav);
 
-  const p = panel('Keyboard and mouse');
+  const p = panel('鍵盤與滑鼠');
   const rows: Array<[string, string]> = [
-    ['Move', 'W A S D'],
-    ['Sprint', 'Shift'],
-    ['Tactical sprint', 'Shift (tap twice)'],
-    ['Jump / mantle', 'Space'],
-    ['Crouch', 'Ctrl or C'],
-    ['Slide', 'Ctrl while sprinting'],
-    ['Prone', 'Z'],
-    ['Fire', 'Left mouse'],
-    ['Aim', 'Right mouse'],
-    ['Reload', 'R'],
-    ['Melee', 'V or middle mouse'],
-    ['Swap weapon', '1 / 2'],
-    ['Lethal', 'G'],
-    ['Tactical', 'Q'],
-    ['Field upgrade', 'X'],
-    ['Killstreaks', '3 / 4 / 5'],
-    ['Scoreboard', 'Tab (hold)'],
-    ['Pause', 'Escape'],
+    ['移動', 'W A S D'],
+    ['衝刺', 'Shift'],
+    ['戰術衝刺', 'Shift（連按兩下）'],
+    ['跳躍／翻越', 'Space'],
+    ['蹲下', 'Ctrl或C'],
+    ['滑鏟', '衝刺時按Ctrl'],
+    ['趴下', 'Z'],
+    ['開火', '滑鼠左鍵'],
+    ['瞄準', '滑鼠右鍵'],
+    ['重新裝填', 'R'],
+    ['近戰', 'V或滑鼠中鍵'],
+    ['切換武器', '1 / 2'],
+    ['致命裝備', 'G'],
+    ['戰術裝備', 'Q'],
+    ['戰地升級', 'X'],
+    ['連殺獎勵', '3 / 4 / 5'],
+    ['計分板', 'Tab（長按）'],
+    ['暫停', 'Escape'],
   ];
   for (const [action, key] of rows) {
     const row = document.createElement('div');
@@ -563,11 +563,10 @@ function buildControlsScreen(): void {
   }
   b.appendChild(p);
 
-  const gp = panel('Gamepad');
+  const gp = panel('遊戲手把');
   gp.innerHTML += `<p style="color:var(--ink-dim);font-size:13px;line-height:1.7">
-    A connected controller is detected automatically and uses the standard
-    layout: sticks to move and look, triggers to aim and fire, A to jump,
-    B to crouch, X to reload, Y to swap, bumpers for equipment.
+    接上的手把會自動偵測，並套用標準配置：搖桿移動與轉視角，扳機瞄準與開火，
+    A跳躍、B蹲下、X重新裝填、Y切換武器，肩鍵使用裝備。
   </p>`;
   b.appendChild(gp);
 }
@@ -576,15 +575,15 @@ function buildLoadoutScreen(): void {
   screens.get('loadout')?.remove();
   screens.delete('loadout');
 
-  const screen = makeScreen('loadout', 'LOADOUT', 'Create a class');
+  const screen = makeScreen('loadout', '配裝', '建立職業');
   const b = body(screen);
 
   const nav = document.createElement('div');
   nav.className = 'menu-nav';
-  nav.appendChild(button('Back', () => showScreen(client ? 'pause' : 'main')));
+  nav.appendChild(button('返回', () => showScreen(client ? 'pause' : 'main')));
   b.appendChild(nav);
 
-  const p = panel('Primary and secondary');
+  const p = panel('主武器與副武器');
   void p;
 
   // The full class editor is built from the weapon and attachment tables; it is
@@ -595,15 +594,15 @@ function buildLoadoutScreen(): void {
 }
 
 function buildPauseScreen(): void {
-  const screen = makeScreen('pause', 'PAUSED', 'Match in progress');
+  const screen = makeScreen('pause', '已暫停', '對戰進行中');
   const b = body(screen);
 
   const nav = document.createElement('div');
   nav.className = 'menu-nav';
-  nav.appendChild(button('Resume', () => { showScreen(null); client?.resume(); }, true));
-  nav.appendChild(button('Settings', () => { buildSettingsScreen(); showScreen('settings'); }));
-  nav.appendChild(button('Controls', () => { buildControlsScreen(); showScreen('controls'); }));
-  nav.appendChild(button('Quit to menu', () => endMatch()));
+  nav.appendChild(button('繼續遊戲', () => { showScreen(null); client?.resume(); }, true));
+  nav.appendChild(button('設定', () => { buildSettingsScreen(); showScreen('settings'); }));
+  nav.appendChild(button('操作', () => { buildControlsScreen(); showScreen('controls'); }));
+  nav.appendChild(button('離開至主選單', () => endMatch()));
   b.appendChild(nav);
 }
 
@@ -611,7 +610,7 @@ function buildResultsScreen(winner: Team | null): void {
   screens.get('results')?.remove();
   screens.delete('results');
 
-  const screen = makeScreen('results', 'MATCH OVER', '');
+  const screen = makeScreen('results', '對戰結束', '');
   const b = body(screen);
   b.style.gridTemplateColumns = '1fr';
 
@@ -621,14 +620,14 @@ function buildResultsScreen(winner: Team | null): void {
 
   const banner = document.createElement('div');
   banner.className = `result-banner ${outcome}`;
-  banner.textContent = outcome === 'victory' ? 'VICTORY' : outcome === 'defeat' ? 'DEFEAT' : 'DRAW';
+  banner.textContent = outcome === 'victory' ? '勝利' : outcome === 'defeat' ? '落敗' : '平手';
   b.appendChild(banner);
 
-  const p = panel('Final scoreboard');
+  const p = panel('最終計分板');
   const table = document.createElement('table');
   table.style.width = '100%';
   table.innerHTML =
-    '<tr><th class="sb-name">PLAYER</th><th>SCORE</th><th>K</th><th>D</th><th>A</th></tr>';
+    '<tr><th class="sb-name">玩家</th><th>分數</th><th>擊殺</th><th>死亡</th><th>助攻</th></tr>';
   for (const player of client?.sim.scoreboard() ?? []) {
     const tr = document.createElement('tr');
     if (player.id === client?.localId) tr.className = 'is-local';
@@ -641,8 +640,8 @@ function buildResultsScreen(winner: Team | null): void {
   b.appendChild(p);
 
   const f = footer(screen);
-  f.appendChild(button('Play again', () => { endMatch(); startMatch(); }, true));
-  f.appendChild(button('Main menu', () => endMatch()));
+  f.appendChild(button('再來一場', () => { endMatch(); startMatch(); }, true));
+  f.appendChild(button('主選單', () => endMatch()));
 }
 
 // ---------------------------------------------------------------------------
@@ -669,7 +668,7 @@ function startMatch(): void {
   }
 
   showScreen(null);
-  setBootProgress(0.4, 'Building map…');
+  setBootProgress(0.4, '地圖建構中…');
 
   client = new GameClient(canvas, hudLayer, config, currentSettings());
   client.onPause = () => showScreen('pause');
@@ -756,13 +755,13 @@ function applyLiveSettings(): void {
 // Go
 // ---------------------------------------------------------------------------
 
-setBootProgress(0.15, 'Loading systems…');
+setBootProgress(0.15, '系統載入中…');
 
 buildMainMenu();
 buildPlayScreen();
 buildPauseScreen();
 
-setBootProgress(1, 'Ready');
+setBootProgress(1, '就緒');
 
 // Give the boot screen a beat so it doesn't flash past unreadably fast.
 window.setTimeout(() => {

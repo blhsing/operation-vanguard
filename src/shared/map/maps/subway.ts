@@ -394,12 +394,12 @@ function buildNavLinks(): NavLink[] {
 
 export const SUBWAY: MapDef = {
   id: 'subway',
-  name: 'Subway',
-  tagline: 'No sky, no air support, no long way round.',
+  name: '地鐵',
+  tagline: '沒有天空，沒有空中支援，也沒有繞路的餘地。',
   description:
-    'An underground station. Two platforms, a sunken track bed between them and a ' +
-    'mezzanine above. Nothing is further than twelve metres away and there is ' +
-    'nowhere the ceiling is not.',
+    '一座地下車站。兩座月台，中間是下沉的軌道床，上方是夾層。' +
+    '沒有東西距離超過十二公尺，' +
+    '也沒有任何一處不在天花板底下。',
   playerCount: [4, 12],
 
   bounds: BOUNDS,

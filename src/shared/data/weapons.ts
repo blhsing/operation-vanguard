@@ -558,11 +558,11 @@ function dmg(...stops: Array<[number, number]>): DamageStop[] {
 const ASSAULT_RIFLES: WeaponDef[] = [
   defineWeapon({
     id: 'vk47',
-    name: 'VK-47 Lynx',
+    name: 'VK-47 山貓',
     shortName: 'VK-47',
     class: WeaponClass.AssaultRifle,
     description:
-      'The baseline. Punishing damage, honest recoil, no tricks — if you can hold it steady it beats almost anything at range.',
+      '基準。傷害紮實，後座力誠實，沒有花招——壓得住的話，遠距離幾乎打得贏任何東西。',
     rpm: 600,
     magSize: 30,
     // Four to the chest almost everywhere: the reference TTK the rest of the
@@ -578,11 +578,11 @@ const ASSAULT_RIFLES: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'm5a1',
-    name: 'M5A1 Carbine',
+    name: 'M5A1 卡賓槍',
     shortName: 'M5A1',
     class: WeaponClass.AssaultRifle,
     description:
-      'A laser. Lowest recoil in the class, paid for with the softest damage — you will win every long trade you can actually land.',
+      '一把雷射。同級最低的後座力，代價是最軟的傷害——只要打得中，每一場遠距離對射都是你的。',
     rpm: 720,
     magSize: 30,
     // Five shots rather than four: it wins by landing every round, not by TTK.
@@ -599,11 +599,11 @@ const ASSAULT_RIFLES: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'gr63',
-    name: 'GR-63 Hammer',
+    name: 'GR-63 鐵鎚',
     shortName: 'GR-63',
     class: WeaponClass.AssaultRifle,
     description:
-      'Slow, heavy, and hits like a truck. Three rounds to the chest at any range you will realistically fight at.',
+      '慢、重，打起來像被卡車撞上。在你實際會交火的任何距離，胸口三發。',
     rpm: 470,
     magSize: 24,
     damage: dmg([40, 40], [62, 34], [90, 29]),
@@ -619,11 +619,11 @@ const ASSAULT_RIFLES: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'ks12',
-    name: 'KS-12 Whisper',
+    name: 'KS-12 低語',
     shortName: 'KS-12',
     class: WeaponClass.AssaultRifle,
     description:
-      'Fast-cycling and light. Wins the close fights an AR has no business winning, and falls apart past the mid-lane.',
+      '循環快、重量輕。贏下突擊步槍本來不該贏的近距離對槍，過了中路就散了。',
     rpm: 810,
     magSize: 32,
     // The SMG-shaped AR: fastest handling in the class, worst damage retention.
@@ -639,11 +639,11 @@ const ASSAULT_RIFLES: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'aug77',
-    name: 'AUG-77 Bulldog',
+    name: 'AUG-77 鬥牛犬',
     shortName: 'AUG-77',
     class: WeaponClass.AssaultRifle,
     description:
-      'Bullpup layout: the mass sits back, so it aims fast for its weight and kicks harder than it looks.',
+      '犢牛式配置：重心靠後，以這個重量來說舉槍很快，後座力也比看起來大。',
     rpm: 660,
     magSize: 30,
     damage: dmg([30, 31], [48, 26], [74, 21]),
@@ -658,11 +658,11 @@ const ASSAULT_RIFLES: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'fr55',
-    name: 'FR-55 Triad',
+    name: 'FR-55 三連',
     shortName: 'FR-55',
     class: WeaponClass.AssaultRifle,
     description:
-      'Three-round burst. Land the whole burst and it is the fastest kill in the class; miss one and you wait.',
+      '三連發。整串打中就是同級最快的擊殺；漏掉一發就只能等。',
     fireMode: FireMode.Burst,
     rpm: 900,
     burstCount: 3,
@@ -680,11 +680,11 @@ const ASSAULT_RIFLES: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'sa58',
-    name: 'SA-58 Vantage',
+    name: 'SA-58 制高',
     shortName: 'SA-58',
     class: WeaponClass.AssaultRifle,
     description:
-      'A battle rifle in an AR slot. Semi-automatic, brutal per-shot damage, and it goes through most of what it hits.',
+      '塞在突擊步槍格子裡的戰鬥步槍。半自動，單發傷害兇狠，而且打中的東西大多穿得過去。',
     fireMode: FireMode.Semi,
     rpm: 400,
     magSize: 20,
@@ -714,7 +714,7 @@ const SMGS: WeaponDef[] = [
     shortName: 'MP9-K',
     class: WeaponClass.SubmachineGun,
     description:
-      'The all-rounder. Enough range to fight in a doorway, enough speed to win the room behind it.',
+      '全能型。射程夠你在門口打，速度夠你拿下門後那間房。',
     rpm: 850,
     magSize: 32,
     damage: dmg([14, 30], [24, 23], [38, 17]),
@@ -731,7 +731,7 @@ const SMGS: WeaponDef[] = [
     shortName: 'VEC-9',
     class: WeaponClass.SubmachineGun,
     description:
-      'Absurd rate of fire. Deletes anything inside ten metres and runs dry doing it.',
+      '荒謬的射速。十公尺內什麼都抹掉，也順便把彈匣打空。',
     rpm: 1200,
     magSize: 30,
     startingReserve: 150,
@@ -749,11 +749,11 @@ const SMGS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'pk10',
-    name: 'PK-10 Marauder',
+    name: 'PK-10 掠奪者',
     shortName: 'PK-10',
     class: WeaponClass.SubmachineGun,
     description:
-      'An SMG that thinks it is a rifle. Slower, heavier, and it still hits at thirty metres.',
+      '一把以為自己是步槍的衝鋒槍。更慢、更重，而且三十公尺外照樣打得到。',
     rpm: 700,
     magSize: 36,
     damage: dmg([20, 30], [34, 24], [52, 18]),
@@ -769,11 +769,11 @@ const SMGS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'skorp',
-    name: 'Skorpion VZ',
-    shortName: 'SKORP',
+    name: '蠍式 VZ',
+    shortName: '蠍式',
     class: WeaponClass.SubmachineGun,
     description:
-      'Tiny, twitchy, and faster to raise than anything else in the game. Point-blank specialist.',
+      '又小又跳，舉槍比遊戲裡任何東西都快。貼臉專用。',
     rpm: 1000,
     magSize: 25,
     damage: dmg([10, 27], [17, 18], [28, 13]),
@@ -792,11 +792,11 @@ const SMGS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'thompson',
-    name: 'TS-45 Chicago',
+    name: 'TS-45 芝加哥',
     shortName: 'TS-45',
     class: WeaponClass.SubmachineGun,
     description:
-      'A heavy old design chambered in something enormous. Slow for the class, but two hits close in.',
+      '老舊的笨重設計，配上大得離譜的口徑。以同級來說偏慢，但近距離兩發。',
     rpm: 620,
     magSize: 30,
     damage: dmg([16, 42], [26, 30], [40, 21]),
@@ -811,11 +811,11 @@ const SMGS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'p90x',
-    name: 'P90-X Swarm',
+    name: 'P90-X 蜂群',
     shortName: 'P90-X',
     class: WeaponClass.SubmachineGun,
     description:
-      'Fifty rounds top-loaded. You will not need to reload in the middle of a fight, ever.',
+      '上置式五十發。你永遠不必在交火中途換彈匣。',
     rpm: 900,
     magSize: 50,
     startingReserve: 200,
@@ -838,11 +838,11 @@ const SMGS: WeaponDef[] = [
 const LMGS: WeaponDef[] = [
   defineWeapon({
     id: 'm60e',
-    name: 'M60-E Anvil',
+    name: 'M60-E 鐵砧',
     shortName: 'M60-E',
     class: WeaponClass.LightMachineGun,
     description:
-      'A hundred rounds of suppression. Slow to bring up, but nothing wins a sustained trade against it.',
+      '一百發的壓制火力。舉槍慢，但沒有東西能在持續對射裡贏它。',
     rpm: 540,
     magSize: 100,
     startingReserve: 200,
@@ -856,11 +856,11 @@ const LMGS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'rpd74',
-    name: 'RPD-74 Bastion',
+    name: 'RPD-74 堡壘',
     shortName: 'RPD-74',
     class: WeaponClass.LightMachineGun,
     description:
-      'Drum-fed and surprisingly quick to aim for its size. The LMG you can actually push with.',
+      '彈鼓供彈，以這個體積來說瞄準意外地快。你真的可以拿來推進的輕機槍。',
     rpm: 640,
     magSize: 75,
     damage: dmg([32, 32], [52, 27], [80, 22]),
@@ -875,11 +875,11 @@ const LMGS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'mg42x',
-    name: 'MG-42X Sawblade',
+    name: 'MG-42X 鋸刃',
     shortName: 'MG-42X',
     class: WeaponClass.LightMachineGun,
     description:
-      'Twelve hundred rounds a minute. Utterly uncontrollable standing up, devastating from a bipod.',
+      '每分鐘一千兩百發。站著打完全壓不住，架上兩腳架則是毀滅性的。',
     rpm: 1150,
     magSize: 125,
     startingReserve: 250,
@@ -896,11 +896,11 @@ const LMGS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'lw90',
-    name: 'LW-90 Breaker',
+    name: 'LW-90 破壞者',
     shortName: 'LW-90',
     class: WeaponClass.LightMachineGun,
     description:
-      'Belt-fed armour-piercing. Punches through cover most weapons cannot even scratch.',
+      '彈鏈供彈的穿甲彈。多數武器連刮都刮不動的掩體，它直接打穿。',
     rpm: 480,
     magSize: 60,
     damage: dmg([44, 42], [70, 35], [100, 30]),
@@ -924,11 +924,11 @@ const LMGS: WeaponDef[] = [
 const SNIPERS: WeaponDef[] = [
   defineWeapon({
     id: 'r700t',
-    name: 'R700-T Verdict',
+    name: 'R700-T 判決',
     shortName: 'R700-T',
     class: WeaponClass.SniperRifle,
     description:
-      'Bolt-action. One shot anywhere above the waist, at any range you can see. The price is everything else.',
+      '手動槍機。腰部以上一槍解決，看得到的距離都算。代價是其他的一切。',
     fireMode: FireMode.BoltAction,
     rpm: 48,
     magSize: 5,
@@ -945,11 +945,11 @@ const SNIPERS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'dsr50',
-    name: 'DSR-50 Anvil',
+    name: 'DSR-50 鐵砧',
     shortName: 'DSR-50',
     class: WeaponClass.SniperRifle,
     description:
-      'Anti-materiel. Goes through walls, vehicles and whoever is standing behind them.',
+      '反器材。穿牆、穿車，也穿站在後面的人。',
     fireMode: FireMode.BoltAction,
     rpm: 40,
     magSize: 4,
@@ -970,11 +970,11 @@ const SNIPERS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'svk12',
-    name: 'SVK-12 Reaper',
+    name: 'SVK-12 死神',
     shortName: 'SVK-12',
     class: WeaponClass.SniperRifle,
     description:
-      'Semi-automatic. Will not one-shot the body, but it will not make you wait for a second try either.',
+      '半自動。打身體不會一槍斃命，但也不會讓你等第二槍。',
     fireMode: FireMode.Semi,
     rpm: 200,
     magSize: 10,
@@ -992,11 +992,11 @@ const SNIPERS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'sp96',
-    name: 'SP-96 Kestrel',
+    name: 'SP-96 紅隼',
     shortName: 'SP-96',
     class: WeaponClass.SniperRifle,
     description:
-      'Stripped to the frame for speed. Aims almost as fast as a marksman rifle and still one-shots the chest up close.',
+      '為了速度削到只剩骨架。舉槍幾乎跟精準步槍一樣快，近距離仍是胸口一槍。',
     fireMode: FireMode.BoltAction,
     rpm: 55,
     magSize: 5,
@@ -1024,11 +1024,11 @@ const SNIPERS: WeaponDef[] = [
 const MARKSMAN: WeaponDef[] = [
   defineWeapon({
     id: 'dmr14',
-    name: 'DMR-14 Sentinel',
+    name: 'DMR-14 哨兵',
     shortName: 'DMR-14',
     class: WeaponClass.MarksmanRifle,
     description:
-      'Two shots to the chest inside forty metres. Fast enough to double-tap, slow enough to punish a miss.',
+      '四十公尺內胸口兩發。快到能連點兩下，也慢到會懲罰你打偏。',
     fireMode: FireMode.Semi,
     rpm: 300,
     magSize: 15,
@@ -1042,11 +1042,11 @@ const MARKSMAN: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'mk18',
-    name: 'MK-18 Longbow',
+    name: 'MK-18 長弓',
     shortName: 'MK-18',
     class: WeaponClass.MarksmanRifle,
     description:
-      'A headshot ends it in one. Everything else takes three, so pick your angles.',
+      '爆頭一發結束。其他部位要三發，所以挑好你的角度。',
     fireMode: FireMode.Semi,
     rpm: 260,
     magSize: 12,
@@ -1064,11 +1064,11 @@ const MARKSMAN: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'ebr7',
-    name: 'EBR-7 Tempest',
+    name: 'EBR-7 暴風',
     shortName: 'EBR-7',
     class: WeaponClass.MarksmanRifle,
     description:
-      'Fires as fast as you can pull. Rewards a steady hand more than any other gun here.',
+      '你扣多快它就打多快。比這裡任何一把槍都更獎勵穩定的手。',
     fireMode: FireMode.Semi,
     rpm: 400,
     magSize: 20,
@@ -1091,11 +1091,11 @@ const MARKSMAN: WeaponDef[] = [
 const SHOTGUNS: WeaponDef[] = [
   defineWeapon({
     id: 'm870',
-    name: 'M870 Breach',
+    name: 'M870 破門',
     shortName: 'M870',
     class: WeaponClass.Shotgun,
     description:
-      'Pump-action. One shell, one body, provided you are close enough to smell them.',
+      '泵動式。一發一具屍體，前提是你近到聞得到對方。',
     fireMode: FireMode.BoltAction,
     rpm: 75,
     magSize: 6,
@@ -1112,11 +1112,11 @@ const SHOTGUNS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'sx12',
-    name: 'SX-12 Vector',
+    name: 'SX-12 向量',
     shortName: 'SX-12',
     class: WeaponClass.Shotgun,
     description:
-      'Semi-automatic. Trades the one-shot for the ability to correct your mistake immediately.',
+      '半自動。用一槍斃命換來立刻補救失誤的能力。',
     fireMode: FireMode.Semi,
     rpm: 260,
     magSize: 8,
@@ -1134,11 +1134,11 @@ const SHOTGUNS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'aa9',
-    name: 'AA-9 Streetsweeper',
+    name: 'AA-9 掃街者',
     shortName: 'AA-9',
     class: WeaponClass.Shotgun,
     description:
-      'Fully automatic, drum-fed. Clears a room in one trigger pull and cannot reach past the door.',
+      '全自動，彈鼓供彈。一次扣扳機清空一個房間，但打不到門外。',
     rpm: 300,
     magSize: 12,
     startingReserve: 36,
@@ -1165,10 +1165,10 @@ const SHOTGUNS: WeaponDef[] = [
 const PISTOLS: WeaponDef[] = [
   defineWeapon({
     id: 'p226',
-    name: 'P226 Sidearm',
+    name: 'P226 佩槍',
     shortName: 'P226',
     class: WeaponClass.Pistol,
-    description: 'Standard issue. Fast to draw, honest damage, nothing to think about.',
+    description: '制式配發。拔槍快，傷害誠實，沒什麼好想的。',
     fireMode: FireMode.Semi,
     rpm: 420,
     magSize: 15,
@@ -1182,10 +1182,10 @@ const PISTOLS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'gs17',
-    name: 'GS-17 Deadbolt',
+    name: 'GS-17 門閂',
     shortName: 'GS-17',
     class: WeaponClass.Pistol,
-    description: 'A hand cannon. Two rounds anywhere, one to the head, and a wrist you will feel it in.',
+    description: '手持火炮。任何部位兩發，頭部一發，代價是你的手腕會有感覺。',
     fireMode: FireMode.Semi,
     rpm: 220,
     magSize: 7,
@@ -1202,10 +1202,10 @@ const PISTOLS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'mp5c',
-    name: 'MP-5C Hornet',
+    name: 'MP-5C 大黃蜂',
     shortName: 'MP-5C',
     class: WeaponClass.Pistol,
-    description: 'A machine pistol in a sidearm slot. Empties in a heartbeat and often that is enough.',
+    description: '塞在副武器格裡的衝鋒手槍。一眨眼就打空，而且通常就夠了。',
     rpm: 1100,
     magSize: 20,
     startingReserve: 100,
@@ -1222,10 +1222,10 @@ const PISTOLS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'r45',
-    name: 'R45 Ranger',
+    name: 'R45 遊騎兵',
     shortName: 'R45',
     class: WeaponClass.Pistol,
-    description: 'A revolver. Six shots, no reload you will survive, and a hell of a lot of stopping power.',
+    description: '左輪手槍。六發，裝填慢到你活不過去，還有高得離譜的停止力。',
     fireMode: FireMode.Semi,
     rpm: 180,
     magSize: 6,
@@ -1254,7 +1254,7 @@ const LAUNCHERS: WeaponDef[] = [
     name: 'RPG-9',
     shortName: 'RPG-9',
     class: WeaponClass.Launcher,
-    description: 'Dumbfire rocket. No lock, no guidance, no second chances.',
+    description: '無導引火箭。不鎖定，不導引，沒有第二次機會。',
     fireMode: FireMode.Semi,
     rpm: 30,
     magSize: 1,
@@ -1272,10 +1272,10 @@ const LAUNCHERS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'stinger',
-    name: 'FIM-9 Talon',
+    name: 'FIM-9 利爪',
     shortName: 'FIM-9',
     class: WeaponClass.Launcher,
-    description: 'Locks on to anything airborne. Useless against infantry, decisive against a chopper.',
+    description: '鎖定任何空中目標。對步兵毫無用處，對直升機則是決定性的。',
     fireMode: FireMode.Semi,
     rpm: 24,
     magSize: 1,
@@ -1294,10 +1294,10 @@ const LAUNCHERS: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'gl40',
-    name: 'GL-40 Thumper',
+    name: 'GL-40 重擊',
     shortName: 'GL-40',
     class: WeaponClass.Launcher,
-    description: 'Break-action grenade launcher. Arcs over cover and ruins whatever is behind it.',
+    description: '中折式榴彈發射器。拋射越過掩體，毀掉後面的一切。',
     fireMode: FireMode.Semi,
     rpm: 45,
     magSize: 1,
@@ -1323,10 +1323,10 @@ const LAUNCHERS: WeaponDef[] = [
 const MELEE: WeaponDef[] = [
   defineWeapon({
     id: 'combat_knife',
-    name: 'Combat Knife',
-    shortName: 'KNIFE',
+    name: '戰鬥小刀',
+    shortName: '小刀',
     class: WeaponClass.Melee,
-    description: 'One hit. Move faster than anyone carrying a gun and get close enough to use it.',
+    description: '一擊。跑得比任何拿槍的人都快，然後近到能用上它。',
     fireMode: FireMode.Swing,
     rpm: 110,
     magSize: 1,
@@ -1343,10 +1343,10 @@ const MELEE: WeaponDef[] = [
   }),
   defineWeapon({
     id: 'riot_shield',
-    name: 'Riot Shield',
-    shortName: 'SHIELD',
+    name: '防暴盾牌',
+    shortName: '盾牌',
     class: WeaponClass.Melee,
-    description: 'Absorbs everything from the front. You give up your gun and most of your speed for it.',
+    description: '正面全擋。代價是你的槍，還有大部分的移動速度。',
     fireMode: FireMode.Swing,
     rpm: 70,
     magSize: 1,

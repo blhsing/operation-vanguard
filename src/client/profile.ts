@@ -76,7 +76,7 @@ export interface Profile {
 export function createProfile(): Profile {
   return {
     version: CURRENT_VERSION,
-    name: 'Player',
+    name: '玩家',
     rank: 1,
     prestige: 0,
     xp: 0,
@@ -90,7 +90,7 @@ export function createProfile(): Profile {
       headshots: 0,
       timePlayed: 0,
     },
-    loadouts: Array.from({ length: 10 }, (_, i) => defaultLoadout(`Class ${i + 1}`)),
+    loadouts: Array.from({ length: 10 }, (_, i) => defaultLoadout(`職業${i + 1}`)),
     activeLoadout: 0,
     weaponXp: {},
     lastMatch: {

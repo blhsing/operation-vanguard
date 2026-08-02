@@ -19,17 +19,32 @@ Yard (tiny, relentless), Highrise (two towers and an open roof), Dust Market
 Plus **Zombies** — round-based co-op survival with a points economy, wall buys,
 the Mystery Box, Pack-a-Punch, perk machines, and a down-and-revive loop.
 
+And a six-mission **Campaign**, one mission per map, with a squad that follows
+you, scripted objectives, and checkpoints that re-enact the fight you lost rather
+than restoring a snapshot of it. A mission is a dependency graph of objectives
+declared as data and interpreted by one runtime — the same shape as the objective
+engine that drives the five competitive modes.
+
+The interface is in **Traditional Chinese** (zh-Hant-TW), using system CJK fonts
+so the zero-binary-assets rule survives localisation.
+
 It ships **zero binary assets**. Every texture, weapon model, character, sound
 effect and map is generated from code at runtime. The entire game — geometry,
 audio, art — is about 220 kB gzipped.
 
 ## The interesting parts
 
-**One simulation, two homes.** `GameSimulation` is transport-agnostic and has no
-dependency on three.js. The same class runs inside the browser for offline play
-and inside Node for a dedicated server, so there is exactly one implementation of
-"what happens when you pull the trigger" and offline and online cannot disagree
-about it.
+**One simulation, no renderer.** `GameSimulation` is transport-agnostic and has
+no dependency on three.js, so it runs headless in Node — which is how the test
+suite plays entire matches and entire campaign missions with nothing attached to
+the screen.
+
+That is also what makes a dedicated server a bounded piece of work rather than a
+rewrite, and it is worth being precise about what exists: **there is no server
+and no networking today.** There is no `src/server/`, `ws` is an unused
+dependency, and the `NET` constants in `constants.ts` — protocol version, port,
+interest radius, input batching — are a design nobody has implemented yet. Every
+mode in the menu is fully playable and populated entirely by bots.
 
 **Presentation is downstream and one-directional.**
 
@@ -80,6 +95,27 @@ npm run dev
 
 Then open http://localhost:5173.
 
+### Running it with no server at all
+
+```bash
+npm run build:standalone
+```
+
+Produces `dist-standalone/vanguard.html` — one file, about 0.9 MB, which you open
+straight off the disk in Chrome. No web server, no install, no network.
+
+That works only because of the zero-binary-assets rule: there is nothing to fetch
+at runtime, so nothing has to be fetched. The build inlines the script and the
+stylesheet into the document and then *refuses to emit* a file that still
+references a sibling, still contains an `import`, or whose script no longer
+parses — because a standalone bundle that works perfectly over http and shows a
+blank page off the disk is very easy to produce by accident.
+
+`npm run verify:standalone` drives that file in real Chrome from a `file://` URL
+over the DevTools protocol: it starts a match through the menu, checks the canvas
+has a live WebGL context and the HUD is counting ammo, and screenshots the
+result.
+
 ```bash
 npm test          # headless match simulation + balance + collision + weapon tests
 npm run typecheck # strict, zero errors
@@ -117,6 +153,7 @@ src/shared/     the simulation — no three.js, runs in Node and the browser
   map/          brush format, prop kit, maps, validation
   ai/           navigation graph and bot behaviour
   zombies/      round curve, horde director, economy, per-map layouts
+  campaign/     mission data model, objective graph runtime, six missions
 src/client/     everything that presents it
   scene/        renderer, viewmodel rig, entity rendering
   render/       procedural textures, materials, models, map geometry

@@ -27,27 +27,27 @@ import type { Profile } from '../profile.js';
 import { getAudioEngine } from '../audio/index.js';
 
 const SLOT_NAMES: Record<AttachmentSlot, string> = {
-  [AttachmentSlot.Muzzle]: 'Muzzle',
-  [AttachmentSlot.Barrel]: 'Barrel',
-  [AttachmentSlot.Optic]: 'Optic',
-  [AttachmentSlot.Underbarrel]: 'Underbarrel',
-  [AttachmentSlot.Magazine]: 'Magazine',
-  [AttachmentSlot.Stock]: 'Stock',
-  [AttachmentSlot.RearGrip]: 'Rear grip',
-  [AttachmentSlot.Laser]: 'Laser',
+  [AttachmentSlot.Muzzle]: '槍口',
+  [AttachmentSlot.Barrel]: '槍管',
+  [AttachmentSlot.Optic]: '瞄具',
+  [AttachmentSlot.Underbarrel]: '槍管下掛',
+  [AttachmentSlot.Magazine]: '彈匣',
+  [AttachmentSlot.Stock]: '槍托',
+  [AttachmentSlot.RearGrip]: '後握把',
+  [AttachmentSlot.Laser]: '雷射',
 };
 
 const CLASS_NAMES: Record<WeaponClass, string> = {
-  [WeaponClass.AssaultRifle]: 'Assault Rifles',
-  [WeaponClass.SubmachineGun]: 'SMGs',
-  [WeaponClass.LightMachineGun]: 'LMGs',
-  [WeaponClass.SniperRifle]: 'Snipers',
-  [WeaponClass.MarksmanRifle]: 'Marksman',
-  [WeaponClass.Shotgun]: 'Shotguns',
-  [WeaponClass.Pistol]: 'Pistols',
-  [WeaponClass.Launcher]: 'Launchers',
-  [WeaponClass.Melee]: 'Melee',
-  [WeaponClass.Special]: 'Special',
+  [WeaponClass.AssaultRifle]: '突擊步槍',
+  [WeaponClass.SubmachineGun]: '衝鋒槍',
+  [WeaponClass.LightMachineGun]: '輕機槍',
+  [WeaponClass.SniperRifle]: '狙擊步槍',
+  [WeaponClass.MarksmanRifle]: '精準步槍',
+  [WeaponClass.Shotgun]: '霰彈槍',
+  [WeaponClass.Pistol]: '手槍',
+  [WeaponClass.Launcher]: '發射器',
+  [WeaponClass.Melee]: '近戰',
+  [WeaponClass.Special]: '特殊',
 };
 
 export function renderLoadoutEditor(
@@ -76,13 +76,13 @@ export function renderLoadoutEditor(
     }));
 
     wrap.appendChild(
-      buildWeaponPanel('Primary', loadout, profile, 'primary', 'primaryAttachments', () => {
+      buildWeaponPanel('主武器', loadout, profile, 'primary', 'primaryAttachments', () => {
         onChange();
         rerender();
       }),
     );
     wrap.appendChild(
-      buildWeaponPanel('Secondary', loadout, profile, 'secondary', 'secondaryAttachments', () => {
+      buildWeaponPanel('副武器', loadout, profile, 'secondary', 'secondaryAttachments', () => {
         onChange();
         rerender();
       }),
@@ -109,7 +109,7 @@ function buildSlotPicker(
   active: number,
   onPick: (i: number) => void,
 ): HTMLElement {
-  const p = panel('Class');
+  const p = panel('職業');
   const row = document.createElement('div');
   row.style.display = 'flex';
   row.style.flexWrap = 'wrap';
@@ -120,7 +120,7 @@ function buildSlotPicker(
     b.className = 'menu-btn' + (i === active ? ' is-primary' : '');
     b.style.padding = '8px 12px';
     b.style.fontSize = '12px';
-    b.textContent = loadout.name || `Class ${i + 1}`;
+    b.textContent = loadout.name || `職業${i + 1}`;
     b.addEventListener('click', () => {
       getAudioEngine().playUi('click');
       onPick(i);
@@ -132,14 +132,14 @@ function buildSlotPicker(
 
   const rename = document.createElement('div');
   rename.className = 'field';
-  rename.innerHTML = '<label>Class name</label>';
+  rename.innerHTML = '<label>職業名稱</label>';
   const input = document.createElement('input');
   input.type = 'text';
   input.maxLength = 20;
   input.value = profile.loadouts[active]?.name ?? '';
   input.addEventListener('change', () => {
     const l = profile.loadouts[active];
-    if (l) l.name = input.value.trim() || `Class ${active + 1}`;
+    if (l) l.name = input.value.trim() || `職業${active + 1}`;
     onPick(active);
   });
   rename.appendChild(input);
@@ -168,7 +168,7 @@ function buildWeaponPanel(
   // --- weapon picker --------------------------------------------------------
   const picker = document.createElement('div');
   picker.className = 'field';
-  picker.innerHTML = '<label>Weapon</label>';
+  picker.innerHTML = '<label>武器</label>';
 
   const select = document.createElement('select');
   for (const cls of Object.values(WeaponClass)) {
@@ -180,7 +180,7 @@ function buildWeaponPanel(
       const locked = w.unlockLevel > profile.rank;
       const o = document.createElement('option');
       o.value = w.id;
-      o.textContent = locked ? `${w.name} — Rank ${w.unlockLevel}` : w.name;
+      o.textContent = locked ? `${w.name} — 軍階${w.unlockLevel}` : w.name;
       o.disabled = locked;
       if (w.id === base.id) o.selected = true;
       group.appendChild(o);
@@ -205,7 +205,7 @@ function buildWeaponPanel(
   const header = document.createElement('div');
   header.className = 'field';
   header.innerHTML =
-    `<label>Attachments</label><span></span>` +
+    `<label>配件</label><span></span>` +
     `<span class="value">${count} / ${MAX_EQUIPPED_ATTACHMENTS}</span>`;
   p.appendChild(header);
 
@@ -224,7 +224,7 @@ function buildWeaponPanel(
     const sel = document.createElement('select');
     const none = document.createElement('option');
     none.value = '';
-    none.textContent = '— none —';
+    none.textContent = '— 無 —';
     sel.appendChild(none);
 
     for (const att of options) {
@@ -288,33 +288,33 @@ function statBlock(base: WeaponDef, resolved: WeaponDef): HTMLElement {
   const baseTtkClose = timeToKill(base, 8, HEALTH.max, 1);
   const baseTtkFar = timeToKill(base, 30, HEALTH.max, 1);
 
-  rows.push(['TTK at 8 m', fmtMs(ttkClose), sign(baseTtkClose - ttkClose)]);
-  rows.push(['TTK at 30 m', fmtMs(ttkFar), sign(baseTtkFar - ttkFar)]);
+  rows.push(['8公尺TTK', fmtMs(ttkClose), sign(baseTtkClose - ttkClose)]);
+  rows.push(['30公尺TTK', fmtMs(ttkFar), sign(baseTtkFar - ttkFar)]);
   rows.push([
-    'Damage at 30 m',
+    '30公尺傷害',
     damageAtRange(resolved.damage, 30).toFixed(0),
     sign(damageAtRange(resolved.damage, 30) - damageAtRange(base.damage, 30)),
   ]);
   rows.push([
-    'ADS time',
+    '瞄準時間',
     `${(resolved.handling.adsTime * 1000).toFixed(0)} ms`,
     sign(base.handling.adsTime - resolved.handling.adsTime),
   ]);
   rows.push([
-    'Reload',
+    '裝填',
     `${resolved.handling.reloadTime.toFixed(2)} s`,
     sign(base.handling.reloadTime - resolved.handling.reloadTime),
   ]);
-  rows.push(['Magazine', String(resolved.magSize), sign(resolved.magSize - base.magSize)]);
-  rows.push(['Rate of fire', `${resolved.rpm} rpm`, 0]);
+  rows.push(['彈匣', String(resolved.magSize), sign(resolved.magSize - base.magSize)]);
+  rows.push(['射速', `${resolved.rpm} rpm`, 0]);
   rows.push([
-    'Movement',
+    '移動速度',
     `${Math.round(resolved.handling.movementSpeedMultiplier * 100)}%`,
     sign(resolved.handling.movementSpeedMultiplier - base.handling.movementSpeedMultiplier),
   ]);
   rows.push([
-    'Suppressed',
-    resolved.audio.suppressed ? 'Yes' : 'No',
+    '消音',
+    resolved.audio.suppressed ? '是' : '否',
     resolved.audio.suppressed && !base.audio.suppressed ? 1 : 0,
   ]);
 
@@ -347,7 +347,7 @@ function sign(delta: number): number {
 // ---------------------------------------------------------------------------
 
 function buildEquipmentPanel(loadout: Loadout, profile: Profile, onChange: () => void): HTMLElement {
-  const p = panel('Equipment');
+  const p = panel('裝備');
 
   const mk = (
     label: string,
@@ -362,7 +362,7 @@ function buildEquipmentPanel(loadout: Loadout, profile: Profile, onChange: () =>
     if (slot === 'field') {
       const none = document.createElement('option');
       none.value = '';
-      none.textContent = '— none —';
+      none.textContent = '— 無 —';
       sel.appendChild(none);
     }
 
@@ -370,7 +370,7 @@ function buildEquipmentPanel(loadout: Loadout, profile: Profile, onChange: () =>
       const locked = def.unlockLevel > profile.rank;
       const o = document.createElement('option');
       o.value = def.id;
-      o.textContent = locked ? `${def.name} — Rank ${def.unlockLevel}` : def.name;
+      o.textContent = locked ? `${def.name} — 軍階${def.unlockLevel}` : def.name;
       o.disabled = locked;
       if (def.id === loadout[key]) o.selected = true;
       sel.appendChild(o);
@@ -395,25 +395,25 @@ function buildEquipmentPanel(loadout: Loadout, profile: Profile, onChange: () =>
     p.appendChild(row);
   };
 
-  mk('Lethal', 'lethal', 'lethal');
-  mk('Tactical', 'tactical', 'tactical');
-  mk('Field upgrade', 'field', 'fieldUpgrade');
+  mk('致命裝備', 'lethal', 'lethal');
+  mk('戰術裝備', 'tactical', 'tactical');
+  mk('戰地升級', 'field', 'fieldUpgrade');
 
   return p;
 }
 
 function buildPerkPanel(loadout: Loadout, profile: Profile, onChange: () => void): HTMLElement {
-  const p = panel('Perks');
+  const p = panel('特技');
 
   for (const tier of [1, 2, 3] as const) {
     const row = document.createElement('div');
     row.className = 'field';
-    row.innerHTML = `<label>Perk ${tier}</label>`;
+    row.innerHTML = `<label>特技${tier}</label>`;
 
     const sel = document.createElement('select');
     const none = document.createElement('option');
     none.value = '';
-    none.textContent = '— none —';
+    none.textContent = '— 無 —';
     sel.appendChild(none);
 
     const current = (loadout.perks ?? []).find((id) => PERKS[id]?.tier === tier) ?? '';
@@ -422,7 +422,7 @@ function buildPerkPanel(loadout: Loadout, profile: Profile, onChange: () => void
       const locked = perk.unlockLevel > profile.rank;
       const o = document.createElement('option');
       o.value = perk.id;
-      o.textContent = locked ? `${perk.name} — Rank ${perk.unlockLevel}` : perk.name;
+      o.textContent = locked ? `${perk.name} — 軍階${perk.unlockLevel}` : perk.name;
       o.disabled = locked;
       if (perk.id === current) o.selected = true;
       sel.appendChild(o);
@@ -457,26 +457,26 @@ function buildKillstreakPanel(
   profile: Profile,
   onChange: () => void,
 ): HTMLElement {
-  const p = panel('Killstreaks');
+  const p = panel('連殺獎勵');
 
   const all = Object.values(KILLSTREAKS).sort((a, b) => a.cost - b.cost);
 
   for (let i = 0; i < 3; i++) {
     const row = document.createElement('div');
     row.className = 'field';
-    row.innerHTML = `<label>Slot ${i + 1}</label>`;
+    row.innerHTML = `<label>欄位${i + 1}</label>`;
 
     const sel = document.createElement('select');
     const none = document.createElement('option');
     none.value = '';
-    none.textContent = '— none —';
+    none.textContent = '— 無 —';
     sel.appendChild(none);
 
     for (const ks of all) {
       const locked = ks.unlockLevel > profile.rank;
       const o = document.createElement('option');
       o.value = ks.id;
-      o.textContent = locked ? `${ks.name} (${ks.cost}) — Rank ${ks.unlockLevel}` : `${ks.name} (${ks.cost})`;
+      o.textContent = locked ? `${ks.name} (${ks.cost}) — 軍階${ks.unlockLevel}` : `${ks.name} (${ks.cost})`;
       o.disabled = locked;
       if (ks.id === loadout.killstreaks[i]) o.selected = true;
       sel.appendChild(o);

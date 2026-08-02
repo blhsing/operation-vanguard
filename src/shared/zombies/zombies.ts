@@ -277,7 +277,7 @@ export class ZombiesDirector {
       zombies: s.remainingToSpawn,
       health: zombieHealthForRound(s.round),
     });
-    this.emitAnnounce(`ROUND ${s.round}`);
+    this.emitAnnounce(`第${s.round}回合`);
   }
 
   private endRound(): void {
@@ -476,7 +476,7 @@ export class ZombiesDirector {
     ) {
       zs.selfReviveUsed = true;
       this.reviveNow(player, zs);
-      this.emitAnnounce('QUICK REVIVE');
+      this.emitAnnounce('快速復活');
       return;
     }
 
@@ -501,7 +501,7 @@ export class ZombiesDirector {
     player.health = 1;
 
     this.emit(SimEventType.Death, { player: player.id, downed: true });
-    this.emitAnnounce(`${player.name} IS DOWN`);
+    this.emitAnnounce(`${player.name}倒地`);
   }
 
   /**
@@ -573,7 +573,7 @@ export class ZombiesDirector {
         this.award(reviver.id, POINTS.revive, 'revive');
         const rs = this.players.get(reviver.id);
         if (rs) rs.revives++;
-        this.emitAnnounce(`${player.name} REVIVED`);
+        this.emitAnnounce(`${player.name}已救起`);
       }
     }
   }
@@ -608,7 +608,7 @@ export class ZombiesDirector {
       gameOver: true,
       round: this.state.round,
     });
-    this.emitAnnounce(`SURVIVED ${this.state.highestRound} ROUNDS`);
+    this.emitAnnounce(`撐過${this.state.highestRound}回合`);
   }
 
   // -------------------------------------------------------------------------
@@ -791,13 +791,13 @@ export class ZombiesDirector {
         if (def.opensZone) {
           this.state.openZones.add(def.opensZone);
           this.emit(SimEventType.ObjectiveCaptured, { zone: def.opensZone });
-          this.emitAnnounce(`${this.zoneName(def.opensZone)} OPEN`);
+          this.emitAnnounce(`${this.zoneName(def.opensZone)}已開啟`);
         }
         return { ok: true, message: 'opened' };
 
       case InteractKind.Power:
         this.state.powerOn = true;
-        this.emitAnnounce('POWER ON');
+        this.emitAnnounce('電力已啟動');
         return { ok: true, message: 'power on' };
 
       case InteractKind.WallBuy:

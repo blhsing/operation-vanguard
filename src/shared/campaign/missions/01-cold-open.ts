@@ -13,11 +13,11 @@ import type { MissionDef } from '../campaign-types.js';
 
 export const COLD_OPEN: MissionDef = {
   id: 'cold_open',
-  name: 'Cold Open',
+  name: '冷開場',
   mapId: 'shipment_yard',
   brief:
-    'A container yard on the wrong side of the river. Intelligence says a dozen ' +
-    'irregulars are using it as a staging point. Intelligence has been wrong before.',
+    '一座貨櫃場，位在河的錯誤那一岸。情報說有十來名非正規軍' +
+    '把那裡當集結點。情報以前也錯過。',
   insertion: { position: vec3(-14, 0.1, -14), yaw: 0 },
   difficulty: 'recruit',
 
@@ -26,8 +26,8 @@ export const COLD_OPEN: MissionDef = {
   objectives: [
     {
       id: 'push',
-      label: 'Clear the near stacks',
-      line: 'Vasquez: On me. They are in among the containers — nothing clever.',
+      label: '清空近側貨櫃堆',
+      line: 'Vasquez：跟緊我。他們就在貨櫃之間——沒什麼花招。',
       // Kill-based, not "reach the middle". Shipment Yard is forty metres of
       // container maze with two-metre lanes, and an objective marker in the
       // centre of it asks the player to solve a navigation puzzle on the one map
@@ -41,9 +41,9 @@ export const COLD_OPEN: MissionDef = {
     },
     {
       id: 'clear',
-      label: 'Clear the yard',
+      label: '清空貨櫃場',
       after: ['push'],
-      line: 'Vasquez: More of them in the stacks. Watch the gaps.',
+      line: 'Vasquez：貨櫃堆裡還有。注意縫隙。',
       trigger: { kind: 'eliminate', count: 5 },
       waves: [
         { spawn: vec3(8.5, 0.1, -9), count: 2, interval: 8, post: vec3(7, 0.1, -7), archetypes: ['rifleman'] },
@@ -53,9 +53,9 @@ export const COLD_OPEN: MissionDef = {
     },
     {
       id: 'hold',
-      label: 'Hold for extraction',
+      label: '固守待撤離',
       after: ['clear'],
-      line: 'Command: Bird is four minutes out. Hold what you have.',
+      line: '指揮部：直升機四分鐘後到。守住你手上的。',
       trigger: { kind: 'survive', seconds: 30 },
       waves: [
         { spawn: vec3(9, 0.1, 6), post: vec3(9, 0.1, 6), count: 1, interval: 14.4, endless: true, archetypes: ['rifleman'] },
@@ -72,5 +72,5 @@ export const COLD_OPEN: MissionDef = {
     },
   ],
 
-  outro: 'Yard is clear. Twelve irregulars, they said.',
+  outro: '貨櫃場清空。他們說是十二個非正規軍。',
 };

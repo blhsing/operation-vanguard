@@ -55,7 +55,7 @@ import { InputManager, type InputSettings } from './input.js';
 import { CameraShake, WorldRenderer, type RenderSettings } from './scene/world-renderer.js';
 import { ViewmodelRig } from './scene/viewmodel.js';
 import { EntityRenderer, ProjectileRenderer } from './scene/entities.js';
-import { Hud, type HudOptions } from './hud/hud.js';
+import { Hud, formatZombiePrompt, type HudOptions } from './hud/hud.js';
 import { getAudioEngine } from './audio/index.js';
 
 export interface MatchConfig {
@@ -344,7 +344,7 @@ export class GameClient {
       if (this.zombies && (cmd.buttons & InputFlag.Use) !== 0 && !this.usePressed) {
         const result = this.zombies.interact(this.localId);
         this.audio.playUi(result.ok ? 'equip' : 'error');
-        if (result.message) this.hud.showAnnounce(result.message.toUpperCase());
+        if (result.message) this.hud.showAnnounce(formatZombiePrompt(result.message));
       }
       this.usePressed = this.zombies ? (cmd.buttons & InputFlag.Use) !== 0 : false;
 

@@ -233,12 +233,12 @@ function buildNavLinks(): NavLink[] {
 
 export const SHIPMENT_YARD: MapDef = {
   id: 'shipment_yard',
-  name: 'Shipment Yard',
-  tagline: 'Twenty-four metres. No cover from anything for long.',
+  name: '貨櫃場',
+  tagline: '二十四公尺。沒有任何掩體撐得久。',
   description:
-    'A container yard barely bigger than a tennis court. Every spawn is a firefight, ' +
-    'every sightline is two seconds long, and the only positioning that matters is the ' +
-    'one you can reach before someone finds you.',
+    '一座比網球場大不了多少的貨櫃場。每次重生都是一場交火，' +
+    '每條視線只有兩秒長，唯一有意義的站位，' +
+    '是你在被人發現之前搆得到的那個。',
   playerCount: [4, 12],
 
   bounds: BOUNDS,

@@ -380,12 +380,12 @@ function buildNavLinks(): NavLink[] {
 
 export const HIGHRISE: MapDef = {
   id: 'highrise',
-  name: 'Highrise',
-  tagline: 'Nowhere to be but up here.',
+  name: '高樓',
+  tagline: '除了上面，無處可去。',
   description:
-    'Two office towers and the roof deck between them, forty storeys up. The helipad ' +
-    'in the middle is the fastest way across and has no cover whatsoever. Hard sun, ' +
-    'long shadows, and a very long way down.',
+    '兩棟辦公大樓，以及夾在中間的屋頂平台，四十層樓高。中央的停機坪' +
+    '是橫越最快的路，而且完全沒有掩體。烈日當空，影子拉得很長，' +
+    '往下則是很長的一段距離。',
   playerCount: [6, 16],
 
   bounds: BOUNDS,

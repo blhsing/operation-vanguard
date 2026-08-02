@@ -386,12 +386,12 @@ function buildNavLinks(): NavLink[] {
 
 export const CROSSFIRE: MapDef = {
   id: 'crossfire',
-  name: 'Crossfire',
-  tagline: 'A market town with three ways to die.',
+  name: '交叉火力',
+  tagline: '一座市集小鎮，三種死法。',
   description:
-    'Three lanes through a shelled European village. The plaza is the fast route and the ' +
-    'dangerous one; the west alley belongs to whoever is holding a shotgun; the warehouse ' +
-    'catwalk owns the east side until somebody flushes it.',
+    '三條路線穿過一座遭砲擊的歐洲村莊。廣場是最快的路，' +
+    '也是最危險的；西側巷弄屬於手持霰彈槍的人；倉庫的' +
+    '高架走道掌控東側，直到有人把上面的人清掉。',
   playerCount: [6, 18],
 
   bounds: BOUNDS,

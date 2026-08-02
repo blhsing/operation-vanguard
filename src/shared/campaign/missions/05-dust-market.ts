@@ -12,11 +12,11 @@ import type { MissionDef } from '../campaign-types.js';
 
 export const NOON: MissionDef = {
   id: 'noon',
-  name: 'Noon',
+  name: '正午',
   mapId: 'dust_market',
   brief:
-    'They move their money through the market at midday, in the open, because ' +
-    'nobody has ever been stupid enough to come and take it at midday, in the open.',
+    '他們在正午、在光天化日下把錢運過市集，因為' +
+    '從來沒有人蠢到會在正午、在光天化日下來把它拿走。',
   insertion: { position: vec3(0, 0.1, 34), yaw: -0.16 },
   difficulty: 'regular',
 
@@ -33,8 +33,8 @@ export const NOON: MissionDef = {
   objectives: [
     {
       id: 'market',
-      label: 'Fight through the market',
-      line: 'Nasser: Stalls give you cover from exactly one direction. Pick it carefully.',
+      label: '強行通過市集',
+      line: 'Nasser：攤位只擋得住一個方向。挑清楚。',
       trigger: { kind: 'eliminate', count: 6 },
       waves: [
         { spawn: vec3(0, 0.1, -28), post: vec3(0, 0.1, -28), count: 4, interval: 4, archetypes: ['rusher', 'rifleman'] },
@@ -45,18 +45,18 @@ export const NOON: MissionDef = {
     },
     {
       id: 'colonnade',
-      label: 'Clear the colonnade',
+      label: '清空柱廊',
       after: ['market'],
-      line: 'Lindqvist: West side. I have an angle from the arches if you can get me there.',
+      line: 'Lindqvist：西側。你把我帶過去，我從拱門那邊有射角。',
       trigger: { kind: 'reach', zone: { center: vec3(-28, 0, 14), size: vec3(12, 6, 12) } },
       waves: [{ spawn: vec3(-38, 0.1, -22), post: vec3(-38, 0.1, -22), count: 3, interval: 5.6, archetypes: ['rifleman', 'sniper'] }],
       checkpoint: true,
     },
     {
       id: 'terrace',
-      label: 'Take the roof terrace',
+      label: '奪取屋頂平台',
       after: ['colonnade'],
-      line: 'Nasser: Stairs are on the far side. It is a long way round and there is no other way.',
+      line: 'Nasser：樓梯在另一頭。要繞很遠，而且沒別條路。',
       trigger: { kind: 'reach', zone: { center: vec3(28, 6.75, 6), size: vec3(16, 5, 22) } },
       waves: [
         { spawn: vec3(28, 6.85, -2), post: vec3(28, 6.85, -2), count: 2, interval: 6.4, archetypes: ['rifleman'] },
@@ -66,9 +66,9 @@ export const NOON: MissionDef = {
     },
     {
       id: 'hold',
-      label: 'Hold the terrace for extraction',
+      label: '固守平台待撤離',
       after: ['terrace'],
-      line: 'Command: Rooftop is the LZ. Everything that wants it has to use the stairs.',
+      line: '指揮部：屋頂就是降落區。想上來的都得走樓梯。',
       trigger: { kind: 'hold', zone: { center: vec3(28, 6.75, 6), size: vec3(18, 5, 24) }, seconds: 50 },
       waves: [
         { spawn: vec3(39, 0.1, -12), post: vec3(39, 0.1, -12), count: 1, interval: 8, endless: true, archetypes: ['rusher'] },
@@ -85,5 +85,5 @@ export const NOON: MissionDef = {
     },
   ],
 
-  outro: 'Money is on the bird. So, remarkably, are we.',
+  outro: '錢上了直升機。難得的是，我們也上了。',
 };

@@ -15,3 +15,7 @@ coverage/
 .env.*
 !.env.example
 stats.html
+
+# Standalone single-file build and its verification artefacts.
+dist-standalone/
+.verify/

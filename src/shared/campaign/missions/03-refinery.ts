@@ -12,12 +12,12 @@ import type { MissionDef } from '../campaign-types.js';
 
 export const CRACKING_TOWER: MissionDef = {
   id: 'cracking_tower',
-  name: 'Cracking Tower',
+  name: '裂解塔',
   mapId: 'refinery',
   brief:
-    'They have been running the refinery at half capacity for six weeks and ' +
-    'shipping the difference somewhere we cannot follow. Two charges, both towers, ' +
-    'and out before the pressure drops.',
+    '他們讓煉油廠以半產能運轉了六週，' +
+    '差額運往我們追不上的地方。兩包炸藥，兩座塔，' +
+    '在壓力掉下來之前撤出。',
   insertion: { position: vec3(-2, 0.1, 35), yaw: -0.16 },
   difficulty: 'regular',
 
@@ -31,22 +31,22 @@ export const CRACKING_TOWER: MissionDef = {
   objectives: [
     {
       id: 'east_approach',
-      label: 'Reach the east cracking tower',
-      line: 'Brandt: East tower first. It is the loud one — nobody will hear us start.',
+      label: '抵達東側裂解塔',
+      line: 'Brandt：先打東塔。那座最吵——沒人會聽見我們動手。',
       trigger: { kind: 'reach', zone: { center: vec3(28, 0, 0), size: vec3(12, 6, 12) } },
       waves: [{ spawn: vec3(30, 0.1, -25), post: vec3(30, 0.1, -25), count: 3, interval: 5.6, archetypes: ['rifleman', 'rusher'] }],
       checkpoint: true,
     },
     {
       id: 'charge_east',
-      label: 'Set the charge',
+      label: '安裝炸藥',
       after: ['east_approach'],
-      line: 'Sood: Hold the key down and do not let go. I will keep them off you.',
+      line: 'Sood：按住按鍵別放。我幫你擋著。',
       trigger: {
         kind: 'interact',
         zone: { center: vec3(28, 0, 0), size: vec3(9, 6, 9) },
         seconds: 8,
-        verb: 'SET CHARGE',
+        verb: '安裝炸藥',
       },
       waves: [
         { spawn: vec3(41, 0.1, -16), post: vec3(41, 0.1, -16), count: 1, interval: 9.6, endless: true, archetypes: ['rusher'] },
@@ -55,9 +55,9 @@ export const CRACKING_TOWER: MissionDef = {
     },
     {
       id: 'west_approach',
-      label: 'Cross to the west tower',
+      label: '轉往西塔',
       after: ['charge_east'],
-      line: 'Brandt: They know now. West side, and quickly.',
+      line: 'Brandt：他們知道了。往西側，快。',
       trigger: { kind: 'reach', zone: { center: vec3(-31, 0, -8), size: vec3(12, 6, 12) } },
       waves: [
         { spawn: vec3(-29, 0.1, -24), post: vec3(-29, 0.1, -24), count: 3, interval: 4.8, archetypes: ['rifleman'] },
@@ -67,14 +67,14 @@ export const CRACKING_TOWER: MissionDef = {
     },
     {
       id: 'charge_west',
-      label: 'Set the second charge',
+      label: '安裝第二包炸藥',
       after: ['west_approach'],
-      line: 'Sood: Same again. Ignore everything that is not the charge.',
+      line: 'Sood：再來一次。除了炸藥以外什麼都別管。',
       trigger: {
         kind: 'interact',
         zone: { center: vec3(-31, 0, -8), size: vec3(9, 6, 9) },
         seconds: 8,
-        verb: 'SET CHARGE',
+        verb: '安裝炸藥',
       },
       waves: [
         { spawn: vec3(-29, 0.1, -24), post: vec3(-29, 0.1, -24), count: 1, interval: 8, endless: true, archetypes: ['rusher', 'rifleman'] },
@@ -83,9 +83,9 @@ export const CRACKING_TOWER: MissionDef = {
     },
     {
       id: 'exfil',
-      label: 'Get to the extraction point',
+      label: '前往撤離點',
       after: ['charge_west'],
-      line: 'Command: Charges are live. You have ninety seconds and a long walk.',
+      line: '指揮部：炸藥已啟動。你有九十秒，還有一段長路。',
       timeLimit: 110,
       trigger: { kind: 'reach', zone: { center: vec3(-2, 0, 35), size: vec3(16, 6, 12) } },
       waves: [
@@ -94,5 +94,5 @@ export const CRACKING_TOWER: MissionDef = {
     },
   ],
 
-  outro: 'Charges away. They will be shipping nothing for a while.',
+  outro: '炸藥送出去了。他們有一陣子什麼都運不出去。',
 };

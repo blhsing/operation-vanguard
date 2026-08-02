@@ -84,9 +84,9 @@ function scoring(o: Partial<ModeScoring> = {}): ModeScoring {
 
 const TEAM_DEATHMATCH: GameModeDef = {
   id: 'tdm',
-  name: 'Team Deathmatch',
-  shortName: 'TDM',
-  description: 'Two teams. Most kills wins. Nothing else to think about.',
+  name: '團隊死鬥',
+  shortName: '團隊',
+  description: '兩支隊伍。擊殺數多的一方獲勝。沒別的好想。',
   teamBased: true,
   scoreLimit: 75,
   timeLimit: 600,
@@ -101,14 +101,14 @@ const TEAM_DEATHMATCH: GameModeDef = {
   scorestreaksOnly: false,
   teamScoresOnKill: true,
   teamSize: [4, 9],
-  introLine: 'Eliminate the enemy team.',
+  introLine: '殲滅敵方隊伍。',
 };
 
 const FREE_FOR_ALL: GameModeDef = {
   id: 'ffa',
-  name: 'Free-For-All',
-  shortName: 'FFA',
-  description: 'Everyone against everyone. First to thirty kills.',
+  name: '大混戰',
+  shortName: '混戰',
+  description: '所有人互為敵人。先達三十殺者獲勝。',
   teamBased: false,
   scoreLimit: 30,
   timeLimit: 600,
@@ -123,14 +123,14 @@ const FREE_FOR_ALL: GameModeDef = {
   scorestreaksOnly: false,
   teamScoresOnKill: true,
   teamSize: [4, 12],
-  introLine: 'Every player for themselves.',
+  introLine: '各自為戰。',
 };
 
 const DOMINATION: GameModeDef = {
   id: 'domination',
-  name: 'Domination',
-  shortName: 'DOM',
-  description: 'Capture and hold three positions. Points tick for every flag you own.',
+  name: '據點爭奪',
+  shortName: '據點',
+  description: '佔領並守住三個據點。每持有一面旗幟就持續累積分數。',
   teamBased: true,
   scoreLimit: 200,
   timeLimit: 900,
@@ -164,14 +164,14 @@ const DOMINATION: GameModeDef = {
   scorestreaksOnly: false,
   teamScoresOnKill: false,
   teamSize: [4, 12],
-  introLine: 'Capture and hold the objectives.',
+  introLine: '佔領並守住目標。',
 };
 
 const SEARCH_AND_DESTROY: GameModeDef = {
   id: 'snd',
-  name: 'Search & Destroy',
-  shortName: 'S&D',
-  description: 'One life a round. Plant the bomb, or stop it being planted.',
+  name: '搜索與摧毀',
+  shortName: '搜毀',
+  description: '每回合一條命。安裝炸彈，或阻止對方安裝。',
   teamBased: true,
   scoreLimit: 0,
   timeLimit: 0,
@@ -201,14 +201,14 @@ const SEARCH_AND_DESTROY: GameModeDef = {
   scorestreaksOnly: true,
   teamScoresOnKill: false,
   teamSize: [4, 6],
-  introLine: 'Search and destroy. One life.',
+  introLine: '搜索與摧毀。只有一條命。',
 };
 
 const KILL_CONFIRMED: GameModeDef = {
   id: 'kc',
-  name: 'Kill Confirmed',
-  shortName: 'KC',
-  description: 'Kills only count when you collect the tag. Deny the enemy theirs.',
+  name: '擊殺確認',
+  shortName: '確認',
+  description: '撿到識別牌，擊殺才算數。別讓敵人撿走他們的。',
   teamBased: true,
   scoreLimit: 65,
   timeLimit: 600,
@@ -233,14 +233,14 @@ const KILL_CONFIRMED: GameModeDef = {
   scorestreaksOnly: false,
   teamScoresOnKill: false,
   teamSize: [4, 9],
-  introLine: 'Collect the tags. Confirm your kills.',
+  introLine: '撿取識別牌。確認你的擊殺。',
 };
 
 const HARDPOINT: GameModeDef = {
   id: 'hardpoint',
-  name: 'Hardpoint',
-  shortName: 'HP',
-  description: 'Hold the rotating zone. A point a second, and it moves every minute.',
+  name: '要塞',
+  shortName: '要塞',
+  description: '守住輪替的區域。每秒一分，每分鐘換位。',
   teamBased: true,
   scoreLimit: 250,
   timeLimit: 600,
@@ -265,14 +265,14 @@ const HARDPOINT: GameModeDef = {
   scorestreaksOnly: false,
   teamScoresOnKill: false,
   teamSize: [4, 6],
-  introLine: 'Secure the hardpoint.',
+  introLine: '拿下要塞。',
 };
 
 const HEADQUARTERS: GameModeDef = {
   id: 'hq',
-  name: 'Headquarters',
-  shortName: 'HQ',
-  description: 'Capture the HQ. Hold it — but while you hold it, you do not respawn.',
+  name: '總部',
+  shortName: '總部',
+  description: '佔領總部。守住它——但持有期間無法重生。',
   teamBased: true,
   scoreLimit: 200,
   timeLimit: 720,
@@ -300,14 +300,14 @@ const HEADQUARTERS: GameModeDef = {
   scorestreaksOnly: false,
   teamScoresOnKill: false,
   teamSize: [4, 9],
-  introLine: 'Secure the headquarters.',
+  introLine: '拿下總部。',
 };
 
 const GUN_GAME: GameModeDef = {
   id: 'gungame',
-  name: 'Gun Game',
-  shortName: 'GG',
-  description: 'Everyone starts on the same gun. Every kill promotes you. Finish the ladder.',
+  name: '槍械競賽',
+  shortName: '槍賽',
+  description: '所有人從同一把槍開始。每次擊殺就升一級。走完整座階梯。',
   teamBased: false,
   scoreLimit: 0,
   timeLimit: 900,
@@ -327,14 +327,14 @@ const GUN_GAME: GameModeDef = {
   scorestreaksOnly: false,
   teamScoresOnKill: false,
   teamSize: [4, 12],
-  introLine: 'Gun Game. Work the ladder.',
+  introLine: '槍械競賽。一路往上爬。',
 };
 
 const ZOMBIES: GameModeDef = {
   id: 'zombies',
-  name: 'Zombies',
-  shortName: 'ZM',
-  description: 'Survive. They get faster, tougher and more numerous every round.',
+  name: '殭屍',
+  shortName: '殭屍',
+  description: '活下去。牠們每回合都更快、更硬、更多。',
   teamBased: true,
   scoreLimit: 0,
   timeLimit: 0,
@@ -364,7 +364,7 @@ const ZOMBIES: GameModeDef = {
   scorestreaksOnly: false,
   teamScoresOnKill: false,
   teamSize: [1, 4],
-  introLine: 'Survive.',
+  introLine: '活下去。',
 };
 
 /**
@@ -378,9 +378,9 @@ const ZOMBIES: GameModeDef = {
  */
 const CAMPAIGN_MODE: GameModeDef = {
   id: 'campaign',
-  name: 'Campaign',
-  shortName: 'CMP',
-  description: 'Six missions. One of them is on a roof you have already fought over.',
+  name: '戰役',
+  shortName: '戰役',
+  description: '六場任務。其中一場在你已經打過的屋頂上。',
   teamBased: true,
   scoreLimit: 0,
   timeLimit: 0,
@@ -396,7 +396,7 @@ const CAMPAIGN_MODE: GameModeDef = {
   scorestreaksOnly: false,
   teamScoresOnKill: false,
   teamSize: [1, 1],
-  introLine: 'Mission start.',
+  introLine: '任務開始。',
 };
 
 // ---------------------------------------------------------------------------

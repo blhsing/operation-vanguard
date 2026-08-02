@@ -321,12 +321,12 @@ function buildNavLinks(): NavLink[] {
 
 export const DUST_MARKET: MapDef = {
   id: 'dust_market',
-  name: 'Dust Market',
-  tagline: 'Everything is for sale and none of it is cover.',
+  name: '沙塵市集',
+  tagline: '什麼都賣，但沒有一樣能當掩體。',
   description:
-    'A bazaar at noon. The market in the middle is a maze of stalls and awnings where ' +
-    'nothing is more than a second away; the colonnade and the street either side are ' +
-    'long, bright and unforgiving.',
+    '正午的市集。中央的市場是攤位與遮陽篷構成的迷宮，' +
+    '任何東西都不到一秒的距離；兩側的列柱廊與街道' +
+    '又長、又亮，而且不留情。',
   playerCount: [6, 18],
 
   bounds: BOUNDS,

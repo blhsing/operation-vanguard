@@ -13,12 +13,12 @@ import type { MissionDef } from '../campaign-types.js';
 
 export const LINE_THREE: MissionDef = {
   id: 'line_three',
-  name: 'Line Three',
+  name: '三號線',
   mapId: 'subway',
   brief:
-    'Everything above ground is being jammed from a relay on the northern ' +
-    'platform. Marchetti can turn it around and point it at them. Marchetti ' +
-    'cannot, under any circumstances, be shot.',
+    '地面上所有通訊都被北側月台上的一具中繼台干擾。' +
+    'Marchetti可以把它掉頭對準他們。Marchetti' +
+    '在任何情況下都不能中彈。',
   insertion: { position: vec3(-13, 0.1, 32), yaw: -0.14 },
   difficulty: 'regular',
 
@@ -36,8 +36,8 @@ export const LINE_THREE: MissionDef = {
   objectives: [
     {
       id: 'concourse',
-      label: 'Clear the central concourse',
-      line: 'Doyle: Both platforms, then the middle. Keep Marchetti behind you.',
+      label: '清空中央大廳',
+      line: 'Doyle：先兩側月台，再中間。讓Marchetti待在你後面。',
       trigger: { kind: 'eliminate', count: 4 },
       waves: [
         { spawn: vec3(13, 0.1, -18), post: vec3(13, 0.1, -18), count: 3, interval: 4.8, archetypes: ['rusher', 'rifleman'] },
@@ -47,9 +47,9 @@ export const LINE_THREE: MissionDef = {
     },
     {
       id: 'mezzanine',
-      label: 'Take the mezzanine',
+      label: '奪取夾層',
       after: ['concourse'],
-      line: 'Ferrara: They are on the walkway. We are not going anywhere until they are not.',
+      line: 'Ferrara：他們在走道上。他們不清掉，我們哪裡都去不了。',
       trigger: { kind: 'reach', zone: { center: vec3(21, 4.3, -18), size: vec3(10, 4, 12) } },
       waves: [
         { spawn: vec3(21, 4.3, -18), post: vec3(21, 4.3, -18), count: 2, interval: 6.4, archetypes: ['sniper', 'rifleman'] },
@@ -59,9 +59,9 @@ export const LINE_THREE: MissionDef = {
     },
     {
       id: 'escort',
-      label: 'Get Marchetti to the northern relay',
+      label: '護送Marchetti到北側中繼台',
       after: ['mezzanine'],
-      line: 'Marchetti: Moving. Do not let me regret this.',
+      line: 'Marchetti：移動中。別讓我後悔這麼做。',
       trigger: { kind: 'escort', ally: 'marchetti', zone: { center: vec3(-15, 0, -20), size: vec3(14, 6, 14) } },
       waves: [
         { spawn: vec3(13, 0.1, -30), post: vec3(13, 0.1, -30), count: 1, interval: 11.2, endless: true, archetypes: ['rifleman'] },
@@ -70,9 +70,9 @@ export const LINE_THREE: MissionDef = {
     },
     {
       id: 'cover',
-      label: 'Cover Marchetti at the relay',
+      label: '在中繼台掩護Marchetti',
       after: ['escort'],
-      line: 'Marchetti: Ninety seconds. Less if nobody shoots me.',
+      line: 'Marchetti：九十秒。沒人朝我開槍的話會更快。',
       trigger: { kind: 'survive', seconds: 45 },
       waves: [
         { spawn: vec3(-13, 0.1, -30), post: vec3(-13, 0.1, -30), count: 1, interval: 8, endless: true, archetypes: ['rusher'] },
@@ -89,5 +89,5 @@ export const LINE_THREE: MissionDef = {
     },
   ],
 
-  outro: 'Relay is ours. Marchetti would like it noted that he was shot at.',
+  outro: '中繼台到手。Marchetti希望大家記下來：有人朝他開槍。',
 };

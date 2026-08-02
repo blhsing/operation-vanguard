@@ -369,12 +369,12 @@ function buildNavLinks(): NavLink[] {
 
 export const REFINERY: MapDef = {
   id: 'refinery',
-  name: 'Refinery',
-  tagline: 'The lamps show you where not to stand.',
+  name: '煉油廠',
+  tagline: '燈光告訴你哪裡不能站。',
   description:
-    'A petrochemical plant on the night shift. Sodium lamps carve the yard into lit ' +
-    'islands and everything between them is dark. The tank farm has no corner to ' +
-    'pre-aim; the gantry sees everything and everything sees the gantry.',
+    '夜班中的石化廠。鈉燈把場區切成一座座光島，' +
+    '光島之間全是黑的。儲槽區沒有可以預瞄的轉角；' +
+    '高架平台看得見一切，一切也看得見高架平台。',
   playerCount: [6, 16],
 
   bounds: BOUNDS,

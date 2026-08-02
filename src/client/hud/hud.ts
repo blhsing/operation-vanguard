@@ -318,7 +318,7 @@ export class Hud {
 
         case SimEventType.KillstreakEarned:
           if (event.player === localId) {
-            this.showAnnounce('KILLSTREAK READY');
+            this.showAnnounce('連殺就緒');
           }
           break;
 
@@ -514,7 +514,7 @@ export class Hud {
     this.zombiesEls.points.textContent = this.displayedPoints.toLocaleString();
 
     this.zombiesEls.remaining.textContent =
-      z.phase === 'intermission' ? 'ROUND CLEAR' : `${z.zombiesAlive} LEFT`;
+      z.phase === 'intermission' ? '回合結束' : `${z.zombiesAlive}隻殘存`;
 
     this.zombiesEls.perks.innerHTML = z.perks
       .map((p) => `<span class="zm-perk" data-perk="${escapeHtml(p)}">${escapeHtml(perkShortName(p))}</span>`)
@@ -523,9 +523,11 @@ export class Hud {
     // Buy prompt.
     if (z.prompt) {
       const cost = z.prompt.cost > 0 ? ` — ${z.prompt.cost}` : '';
-      const detail = z.prompt.usable ? cost : ` — ${z.prompt.reason.toUpperCase()}`;
+      const detail = z.prompt.usable ? cost : ` — ${formatZombiePrompt(z.prompt.reason)}`;
+      // Not upper-cased: the label is Chinese apart from the weapon
+      // designations, and those carry their own authored casing ("Vector-9").
       this.zombiesEls.prompt.innerHTML =
-        `<span class="zm-key">F</span> ${escapeHtml(z.prompt.label.toUpperCase())}${escapeHtml(detail)}`;
+        `<span class="zm-key">F</span> ${escapeHtml(z.prompt.label)}${escapeHtml(detail)}`;
       this.zombiesEls.prompt.classList.add('is-visible');
       this.zombiesEls.prompt.classList.toggle('is-blocked', !z.prompt.usable);
     } else {
@@ -537,7 +539,7 @@ export class Hud {
       this.zombiesEls.downed.classList.add('is-visible');
       const pct = Math.round(z.reviveProgress * 100);
       this.zombiesEls.downed.innerHTML =
-        `<div class="zm-down-label">YOU ARE DOWN</div>` +
+        `<div class="zm-down-label">你已倒地</div>` +
         `<div class="zm-down-timer">${Math.max(0, z.bleedOut).toFixed(0)}</div>` +
         (z.reviveProgress > 0
           ? `<div class="zm-down-revive"><div style="width:${pct}%"></div></div>`
@@ -716,9 +718,9 @@ export class Hud {
 
     this.els.modeName.textContent =
       match.phase === MatchPhase.Warmup
-        ? 'WARMUP'
+        ? '熱身'
         : match.phase === MatchPhase.MatchEnd
-          ? 'MATCH OVER'
+          ? '對戰結束'
           : world.modeId.toUpperCase();
   }
 
@@ -730,7 +732,7 @@ export class Hud {
    */
   private buildCompass(): void {
     const marks: string[] = [];
-    const labels: Record<number, string> = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW' };
+    const labels: Record<number, string> = { 0: '北', 45: '東北', 90: '東', 135: '東南', 180: '南', 225: '西南', 270: '西', 315: '西北' };
     // Two full turns so scrolling never runs off either end.
     for (let rep = 0; rep < 2; rep++) {
       for (let deg = 0; deg < 360; deg += 15) {
@@ -764,8 +766,8 @@ export class Hud {
     const t = Math.max(0, player.respawnTimer);
     this.els.respawn.innerHTML =
       t > 0.05
-        ? `<div class="respawn-label">RESPAWNING IN</div><div class="respawn-time">${t.toFixed(1)}</div>`
-        : `<div class="respawn-label">PRESS FIRE TO RESPAWN</div>`;
+        ? `<div class="respawn-label">重生倒數</div><div class="respawn-time">${t.toFixed(1)}</div>`
+        : `<div class="respawn-label">按開火鍵重生</div>`;
   }
 
   private updateStreaks(player: PlayerState): void {
@@ -803,24 +805,24 @@ export class Hud {
       const kd = p.deaths === 0 ? p.kills.toFixed(2) : (p.kills / p.deaths).toFixed(2);
       return (
         `<tr class="${p.id === localId ? 'is-local' : ''} ${p.alive ? '' : 'is-dead'}">` +
-        `<td class="sb-name">${p.isBot ? '<span class="sb-bot">BOT</span> ' : ''}${escapeHtml(p.name)}</td>` +
+        `<td class="sb-name">${p.isBot ? '<span class="sb-bot">電腦</span> ' : ''}${escapeHtml(p.name)}</td>` +
         `<td>${p.score}</td><td>${p.kills}</td><td>${p.deaths}</td><td>${p.assists}</td><td>${kd}</td>` +
         `</tr>`
       );
     };
 
     const header =
-      '<tr><th class="sb-name">PLAYER</th><th>SCORE</th><th>K</th><th>D</th><th>A</th><th>K/D</th></tr>';
+      '<tr><th class="sb-name">玩家</th><th>分數</th><th>殺</th><th>死</th><th>助</th><th>K/D</th></tr>';
 
     if (teamBased) {
       const allies = players.filter((p) => p.team === Team.Allies);
       const axis = players.filter((p) => p.team === Team.Axis);
       this.els.scoreboard.innerHTML =
-        `<div class="sb-team sb-allies"><h3>ALLIES</h3><table>${header}${allies.map(row).join('')}</table></div>` +
-        `<div class="sb-team sb-axis"><h3>AXIS</h3><table>${header}${axis.map(row).join('')}</table></div>`;
+        `<div class="sb-team sb-allies"><h3>盟軍</h3><table>${header}${allies.map(row).join('')}</table></div>` +
+        `<div class="sb-team sb-axis"><h3>軸心</h3><table>${header}${axis.map(row).join('')}</table></div>`;
     } else {
       this.els.scoreboard.innerHTML =
-        `<div class="sb-team"><h3>FREE-FOR-ALL</h3><table>${header}${players.map(row).join('')}</table></div>`;
+        `<div class="sb-team"><h3>大混戰</h3><table>${header}${players.map(row).join('')}</table></div>`;
     }
   }
 
@@ -863,15 +865,15 @@ function escapeHtml(s: string): string {
 function perkShortName(id: string): string {
   switch (id) {
     case 'juggernog':
-      return 'JUG';
+      return '生命';
     case 'speed_cola':
-      return 'SPD';
+      return '裝填';
     case 'double_tap':
-      return 'DT';
+      return '雙發';
     case 'stamin_up':
-      return 'STA';
+      return '耐力';
     case 'quick_revive':
-      return 'REV';
+      return '速救';
     default:
       return id.slice(0, 3).toUpperCase();
   }
@@ -885,15 +887,75 @@ function shortWeaponName(id: string): string {
 function formatScoreReason(reason: string): string {
   switch (reason) {
     case 'kill':
-      return 'KILL';
+      return '擊殺';
     case 'assist':
-      return 'ASSIST';
+      return '助攻';
     case 'capture':
-      return 'CAPTURE';
+      return '佔領';
     case 'defend':
-      return 'DEFEND';
+      return '防守';
+    case 'plant':
+      return '安裝';
+    case 'defuse':
+      return '拆除';
+    case 'confirm':
+      return '確認';
+    case 'deny':
+      return '阻斷';
+    case 'hit':
+      return '命中';
+    case 'revive':
+      return '救援';
+    case 'round_survived':
+      return '回合存活';
+    case 'refund':
+      return '退款';
     default:
       return reason.toUpperCase();
+  }
+}
+
+/**
+ * Zombies interaction codes -> display text.
+ *
+ * The director returns these as stable status codes, not prose: they are part
+ * of its contract and are asserted against in the tests, so they stay English
+ * in the simulation and are translated here, at the edge, exactly like
+ * `formatScoreReason` above. Anything unrecognised is passed through unchanged
+ * because the success path returns a weapon or perk name, which is already
+ * localised in the data tables.
+ */
+export function formatZombiePrompt(code: string): string {
+  const need = /^need (\d+)$/.exec(code);
+  if (need) return `需要${need[1]}點`;
+
+  switch (code) {
+    case 'unavailable':
+      return '無法使用';
+    case 'area locked':
+      return '區域未開啟';
+    case 'needs power':
+      return '需要電力';
+    case 'already open':
+    case 'opened':
+      return '已開啟';
+    case 'already on':
+      return '已啟動';
+    case 'power on':
+      return '電力啟動';
+    case 'already owned':
+      return '已擁有';
+    case 'no perk slots':
+      return '特技欄已滿';
+    case 'already upgraded':
+    case 'upgraded':
+      return '已強化';
+    case 'not enough points':
+      return '點數不足';
+    case 'ammo':
+      return '補充彈藥';
+    default:
+      return code;
   }
 }
 
@@ -938,9 +1000,9 @@ const HUD_TEMPLATE = `
 </div>
 <div class="hud-zombies">
   <div class="hud-zm-top">
-    <div class="hud-zm-block"><span class="hud-zm-label">ROUND</span><span class="hud-zm-round">—</span></div>
-    <div class="hud-zm-block"><span class="hud-zm-label">POINTS</span><span class="hud-zm-points">0</span></div>
-    <div class="hud-zm-remaining">0 LEFT</div>
+    <div class="hud-zm-block"><span class="hud-zm-label">回合</span><span class="hud-zm-round">—</span></div>
+    <div class="hud-zm-block"><span class="hud-zm-label">點數</span><span class="hud-zm-points">0</span></div>
+    <div class="hud-zm-remaining">0隻殘存</div>
   </div>
   <div class="hud-zm-perks"></div>
 </div>

@@ -35,7 +35,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
   zones: [
     {
       id: 'start',
-      name: 'South Plaza',
+      name: '南廣場',
       startingZone: true,
       // Zombies come in from the map edges behind the players, so the pressure
       // is always from the direction you are not looking.
@@ -48,7 +48,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
     },
     {
       id: 'mid',
-      name: 'Market Plaza',
+      name: '市集廣場',
       spawnPoints: [
         vec3(-10, 0.1, 8),
         vec3(10, 0.1, 10),
@@ -58,7 +58,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
     },
     {
       id: 'west',
-      name: 'West Alley',
+      name: '西側巷弄',
       spawnPoints: [
         vec3(-33, 0.1, 20),
         vec3(-34, 0.1, -4),
@@ -67,7 +67,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
     },
     {
       id: 'warehouse',
-      name: 'Warehouse',
+      name: '倉庫',
       spawnPoints: [
         vec3(24, 0.1, 8),
         vec3(23, 0.1, -14),
@@ -76,7 +76,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
     },
     {
       id: 'north',
-      name: 'North Yard',
+      name: '北側貨場',
       spawnPoints: [
         vec3(-12, 0.1, -30),
         vec3(12, 0.1, -30),
@@ -96,7 +96,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       cost: 750,
       zone: 'start',
       opensZone: 'mid',
-      label: 'Clear Debris',
+      label: '清除瓦礫',
     },
     {
       id: 'door_west',
@@ -106,7 +106,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       cost: 1000,
       zone: 'start',
       opensZone: 'west',
-      label: 'Open Alley Gate',
+      label: '開啟巷弄鐵門',
     },
     {
       id: 'door_warehouse',
@@ -116,7 +116,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       cost: 1250,
       zone: 'start',
       opensZone: 'warehouse',
-      label: 'Open Loading Door',
+      label: '開啟裝卸門',
     },
     {
       id: 'door_north',
@@ -126,7 +126,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       cost: 1500,
       zone: 'mid',
       opensZone: 'north',
-      label: 'Force North Gate',
+      label: '撬開北側閘門',
     },
 
     // --- wall buys --------------------------------------------------------
@@ -152,7 +152,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       ammoCost: 500,
       zone: 'start',
       weaponId: 'm870',
-      label: 'M870 Breach',
+      label: 'M870 破門',
     },
     {
       id: 'wall_ar',
@@ -163,7 +163,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       ammoCost: 600,
       zone: 'mid',
       weaponId: 'vk47',
-      label: 'VK-47 Lynx',
+      label: 'VK-47 山貓',
     },
     {
       id: 'wall_smg2',
@@ -185,7 +185,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       ammoCost: 750,
       zone: 'warehouse',
       weaponId: 'm60e',
-      label: 'M60-E Anvil',
+      label: 'M60-E 鐵砧',
     },
     {
       id: 'wall_sniper',
@@ -196,7 +196,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       ammoCost: 700,
       zone: 'north',
       weaponId: 'gr63',
-      label: 'GR-63 Hammer',
+      label: 'GR-63 鐵鎚',
     },
 
     // --- power ------------------------------------------------------------
@@ -209,7 +209,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       yaw: 0,
       cost: 0,
       zone: 'warehouse',
-      label: 'Activate Power',
+      label: '啟動電力',
     },
 
     // --- mystery box ------------------------------------------------------
@@ -220,7 +220,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       yaw: Math.PI,
       cost: 0,
       zone: 'warehouse',
-      label: 'Mystery Box',
+      label: '神秘箱',
     },
 
     // --- pack-a-punch -----------------------------------------------------
@@ -232,7 +232,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       cost: 0,
       zone: 'north',
       requiresPower: true,
-      label: 'Pack-a-Punch',
+      label: '強化機',
     },
 
     // --- perk machines ----------------------------------------------------
@@ -246,7 +246,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       cost: 0,
       zone: 'start',
       perkId: 'quick_revive',
-      label: 'Quick Revive',
+      label: '快速復活',
     },
     {
       id: 'perk_jugg',
@@ -257,7 +257,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       zone: 'warehouse',
       perkId: 'juggernog',
       requiresPower: true,
-      label: 'Juggernog',
+      label: '重裝可樂',
     },
     {
       id: 'perk_speed',
@@ -268,7 +268,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       zone: 'west',
       perkId: 'speed_cola',
       requiresPower: true,
-      label: 'Speed Cola',
+      label: '快速可樂',
     },
     {
       id: 'perk_doubletap',
@@ -279,7 +279,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       zone: 'north',
       perkId: 'double_tap',
       requiresPower: true,
-      label: 'Double Tap',
+      label: '雙倍快發',
     },
     {
       id: 'perk_stamin',
@@ -290,7 +290,7 @@ export const CROSSFIRE_ZOMBIES: ZombiesMapData = {
       zone: 'mid',
       perkId: 'stamin_up',
       requiresPower: true,
-      label: 'Stamin-Up',
+      label: '耐力增強',
     },
   ],
 };

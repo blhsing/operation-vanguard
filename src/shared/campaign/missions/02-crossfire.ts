@@ -12,11 +12,11 @@ import type { MissionDef } from '../campaign-types.js';
 
 export const ASH_AND_STONE: MissionDef = {
   id: 'ash_and_stone',
-  name: 'Ash and Stone',
+  name: '灰燼與磚石',
   mapId: 'crossfire',
   brief:
-    'The village sits on the only road north. It has changed hands four times ' +
-    'this month and nobody has held the square for longer than a day.',
+    '這座村莊卡在唯一一條北上的路上。這個月已經四度易手，' +
+    '沒有人守住廣場超過一天。',
   insertion: { position: vec3(0, 0.1, 34), yaw: -0.18 },
   difficulty: 'regular',
 
@@ -33,8 +33,8 @@ export const ASH_AND_STONE: MissionDef = {
   objectives: [
     {
       id: 'west',
-      label: 'Take the west approach',
-      line: 'Reyes: Left side. If we go up the middle they will cut us in half.',
+      label: '奪取西側通道',
+      line: 'Reyes：走左邊。從中間上去會被攔腰打斷。',
       trigger: { kind: 'reach', zone: { center: vec3(-29, 0, 16), size: vec3(10, 5, 10) } },
       waves: [
         { spawn: vec3(-31, 0.1, -12), post: vec3(-31, 0.1, -12), count: 3, interval: 5.6, archetypes: ['rifleman', 'rusher'] },
@@ -43,9 +43,9 @@ export const ASH_AND_STONE: MissionDef = {
     },
     {
       id: 'square',
-      label: 'Break the garrison in the square',
+      label: '擊潰廣場守軍',
       after: ['west'],
-      line: 'Okafor: They are dug in around the fountain. Say when.',
+      line: 'Okafor：他們在噴泉周圍掘壕固守。你說一聲。',
       trigger: { kind: 'eliminate', count: 5 },
       waves: [
         { spawn: vec3(0, 0.1, -18), post: vec3(0, 0.1, -18), count: 4, interval: 4.8, archetypes: ['rifleman'] },
@@ -55,9 +55,9 @@ export const ASH_AND_STONE: MissionDef = {
     },
     {
       id: 'hold',
-      label: 'Hold the square',
+      label: '守住廣場',
       after: ['square'],
-      line: 'Command: Armour is coming up the road. Hold the square until it does.',
+      line: '指揮部：裝甲正沿著路上來。守住廣場，等它上來為止。',
       trigger: { kind: 'hold', zone: { center: vec3(0, 0, 0), size: vec3(14, 6, 14) }, seconds: 40 },
       waves: [
         { spawn: vec3(0, 0.1, -34), post: vec3(0, 0.1, -34), count: 1, interval: 11.2, endless: true, archetypes: ['rifleman'] },
@@ -75,13 +75,13 @@ export const ASH_AND_STONE: MissionDef = {
     },
     {
       id: 'north',
-      label: 'Clear the north road',
+      label: '清空北向道路',
       after: ['hold'],
-      line: 'Reyes: Road is open. Let us go and look at it.',
+      line: 'Reyes：路通了。過去看看。',
       trigger: { kind: 'reach', zone: { center: vec3(0, 0, -34), size: vec3(14, 5, 12) } },
       waves: [{ spawn: vec3(-29, 0.1, -25), post: vec3(-29, 0.1, -25), count: 2, interval: 6.4, archetypes: ['sniper', 'rifleman'] }],
     },
   ],
 
-  outro: 'Village is ours. Give it a day.',
+  outro: '村子是我們的了。頂多一天。',
 };

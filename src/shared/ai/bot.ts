@@ -90,7 +90,7 @@ export interface BotDifficulty {
 
 export const DIFFICULTIES: Record<string, BotDifficulty> = {
   recruit: {
-    name: 'Recruit',
+    name: '新兵',
     reactionTime: 0.62,
     aimError: 0.075,
     turnSpeed: 2.4,
@@ -104,7 +104,7 @@ export const DIFFICULTIES: Record<string, BotDifficulty> = {
     panicSpray: 0.45,
   },
   regular: {
-    name: 'Regular',
+    name: '正規',
     reactionTime: 0.42,
     aimError: 0.042,
     turnSpeed: 4.2,
@@ -118,7 +118,7 @@ export const DIFFICULTIES: Record<string, BotDifficulty> = {
     panicSpray: 0.25,
   },
   hardened: {
-    name: 'Hardened',
+    name: '精銳',
     reactionTime: 0.26,
     aimError: 0.022,
     turnSpeed: 6.5,
@@ -132,7 +132,7 @@ export const DIFFICULTIES: Record<string, BotDifficulty> = {
     panicSpray: 0.12,
   },
   veteran: {
-    name: 'Veteran',
+    name: '老兵',
     reactionTime: 0.16,
     aimError: 0.011,
     turnSpeed: 9.0,
