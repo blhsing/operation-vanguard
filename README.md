@@ -12,6 +12,9 @@ A complete arena shooter: three-lane maps, a 36-weapon arsenal with attachments,
 create-a-class, perks, killstreaks, ranked progression, and bots that have to
 actually see you before they can shoot you.
 
+Plus **Zombies** — round-based co-op survival with a points economy, wall buys,
+the Mystery Box, Pack-a-Punch, perk machines, and a down-and-revive loop.
+
 It ships **zero binary assets**. Every texture, weapon model, character, sound
 effect and map is generated from code at runtime. The entire game — geometry,
 audio, art — is about 220 kB gzipped.
@@ -50,6 +53,14 @@ per-tick noise, because white noise averages out over a burst and makes bots
 uncannily accurate at sustained fire; a persistent offset reproduces the human
 pattern of missing one way and then correcting.
 
+**Zombies reuses everything.** A zombie is an ordinary player entity on
+`Team.Hostile`, driven through the same `InputCommand` a human sends. It collides,
+gets shot with the same per-bone hitboxes, takes wallbang and explosion damage,
+and paths on the same nav graph. There is no separate zombie movement code to
+keep in sync — which also means a zombie can never walk through a door you
+cannot. The one thing it does differently is always know where you are, because
+a horde you can hide from is not a horde.
+
 **Balance is enforced, not asserted.** `validateArsenal()` computes real
 time-to-kill for every weapon at every range and fails the build if an assault
 rifle strays outside 250–420 ms at 20 m, if an SMG doesn't fall off past 25 m, or
@@ -86,6 +97,7 @@ npm run build     # production bundle
 | Swap weapon | `1` `2` |
 | Lethal / tactical | `G` / `Q` |
 | Killstreaks | `3` `4` `5` |
+| Buy / interact (Zombies) | `F` |
 | Scoreboard | `Tab` (hold) |
 
 A gamepad is detected automatically and uses the standard layout.
@@ -100,6 +112,7 @@ src/shared/     the simulation — no three.js, runs in Node and the browser
   data/         weapons, attachments, perks, killstreaks, equipment, modes
   map/          brush format, prop kit, maps, validation
   ai/           navigation graph and bot behaviour
+  zombies/      round curve, horde director, economy, per-map layouts
 src/client/     everything that presents it
   scene/        renderer, viewmodel rig, entity rendering
   render/       procedural textures, materials, models, map geometry
@@ -125,6 +138,12 @@ A few decisions that are load-bearing and non-obvious:
 - **Nav graph edges are short.** Long edges must survive every intermediate
   walkability probe, so raising the connection radius *reduces* connectivity —
   one clipped doorframe twenty metres away kills the whole link.
+- **The zombie round curve caps speed but not health.** An uncapped speed curve
+  does not make the game progressively harder, it picks one round to become
+  unplayable and is identical before that.
+- **Events are handed over at the end of a tick, not cleared at the start.**
+  Clearing first silently discarded anything emitted *between* ticks, so a mode
+  calling `damagePlayer` directly lost every event it caused.
 
 ## Licence
 

@@ -205,6 +205,25 @@ export class GameSimulation {
   readonly objectives: ObjectiveState;
   readonly killstreaks: KillstreakRuntime;
 
+  /**
+   * Optional per-tick modifier hook, installed by a game mode.
+   *
+   * Zombies uses it for perks, the downed crawl and zombie speed. Modes adjust
+   * the modifiers the systems already computed rather than mutating player
+   * state, so nothing has to second-guess movement or weapon handling.
+   */
+  modifierHook: ((
+    player: PlayerState,
+    move: MovementModifiers,
+    weapon: WeaponModifiers,
+  ) => void) | null = null;
+
+  /**
+   * Optional outgoing-damage multiplier, installed by a game mode.
+   * Zombies uses it for Pack-a-Punch.
+   */
+  damageMultiplierHook: ((attacker: PlayerId, weaponId: string) => number) | null = null;
+
   /** Events produced this tick. Cleared at the start of every step. */
   private events: SimEvent[] = [];
   private readonly runtimes = new Map<PlayerId, PlayerRuntime>();
@@ -320,7 +339,6 @@ export class GameSimulation {
 
   /** Advance the simulation by one tick and return the events it produced. */
   step(dt: number = TICK_DT): SimEvent[] {
-    this.events = [];
     this.world.tick++;
     this.world.time += dt;
     this.rng.setState(this.world.rngState);
@@ -353,7 +371,15 @@ export class GameSimulation {
     this.stepDeployableRuntime(dt);
 
     this.world.rngState = this.rng.getState();
-    return this.events;
+
+    // Hand the buffer over and start a fresh one, rather than clearing at the
+    // top of the tick. Clearing first silently discarded anything emitted
+    // BETWEEN ticks — a mode calling damagePlayer directly would lose every kill
+    // and hit event it caused, which is exactly the kind of gap that shows up as
+    // "the feature does nothing" rather than as an error.
+    const produced = this.events;
+    this.events = [];
+    return produced;
   }
 
   /**
@@ -646,7 +672,8 @@ export class GameSimulation {
           }
         }
 
-        if (match.timeRemaining <= 0) {
+        // A mode with no time limit (Zombies) runs until its own rules end it.
+        if (this.mode.timeLimit > 0 && match.timeRemaining <= 0) {
           this.endMatch(this.leadingTeam());
         }
         break;
@@ -762,6 +789,20 @@ export class GameSimulation {
       fallDamageImmune: perks.fallDamageImmune ?? false,
     };
 
+    // Weapon modifiers are built here, alongside the movement ones, so the mode
+    // hook can be called EXACTLY ONCE with both. Calling it twice would apply
+    // every multiplicative modifier twice.
+    const weaponMods: WeaponModifiers = {
+      reloadSpeedMult: 1 / (perks.reloadSpeedMult ?? 1),
+      adsSpeedMult: 1 / (perks.adsSpeedMult ?? 1),
+      swapSpeedMult: 1 / (perks.swapSpeedMult ?? 1),
+      sprintOutMult: 1 / (perks.sprintOutMult ?? 1),
+      hipSpreadMult: 1,
+      fireBlocked: !live || this.world.match.phase === MatchPhase.MatchEnd,
+    };
+
+    this.modifierHook?.(player, moveMods, weaponMods);
+
     const move = stepMovement(player, input, this.collision, dt, moveMods);
 
     if (move.jumped) {
@@ -815,15 +856,6 @@ export class GameSimulation {
 
     // --- weapon -----------------------------------------------------------
     setTrigger(player, input);
-
-    const weaponMods: WeaponModifiers = {
-      reloadSpeedMult: 1 / (perks.reloadSpeedMult ?? 1),
-      adsSpeedMult: 1 / (perks.adsSpeedMult ?? 1),
-      swapSpeedMult: 1 / (perks.swapSpeedMult ?? 1),
-      sprintOutMult: 1 / (perks.sprintOutMult ?? 1),
-      hipSpreadMult: 1,
-      fireBlocked: !live || this.world.match.phase === MatchPhase.MatchEnd,
-    };
 
     const weaponResult = stepWeapon(
       player,
@@ -1006,7 +1038,7 @@ export class GameSimulation {
     v3normalize(_dmgDir, _dmgDir);
 
     const info: DamageInfo = {
-      amount: trace.damage,
+      amount: trace.damage * (this.damageMultiplierHook?.(shooter.id, weapon.id) ?? 1),
       attacker: shooter.id,
       victim: victim.id,
       cause: DamageCause.Bullet,
@@ -1617,7 +1649,11 @@ export class GameSimulation {
 
   /** Snapshot of scores for the HUD scoreboard, sorted the way COD sorts them. */
   scoreboard(): PlayerState[] {
-    const list = Array.from(this.world.players.values());
+    // Hostiles are AI opposition, not competitors — a Zombies scoreboard listing
+    // two dozen zombies would be useless.
+    const list = Array.from(this.world.players.values()).filter(
+      (p) => p.team !== Team.Hostile,
+    );
     list.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       if (b.kills !== a.kills) return b.kills - a.kills;

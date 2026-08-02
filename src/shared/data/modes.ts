@@ -394,6 +394,17 @@ export const MULTIPLAYER_MODE_IDS: string[] = ALL_MODES.filter((m) => m.id !== '
   (m) => m.id,
 );
 
+/**
+ * Everything a player can actually pick, Zombies included.
+ *
+ * Kept separate from MULTIPLAYER_MODE_IDS because Zombies is not a playlist
+ * variant — it has no teams, no timer and its own director — and matchmaking
+ * should never fold it in with the competitive modes.
+ */
+export const PLAYABLE_MODE_IDS: string[] = ALL_MODES.map((m) => m.id);
+
+export const ZOMBIES_MODE_ID = 'zombies';
+
 export const DEFAULT_MODE = TEAM_DEATHMATCH.id;
 
 export function getMode(id: string): GameModeDef {

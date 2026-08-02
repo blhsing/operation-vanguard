@@ -24,6 +24,7 @@ import { MAX_TICKS_PER_FRAME, RENDER, TICK_DT } from '@shared/constants.js';
 import { anglesToForward, clamp, clamp01, damp, v3distance, vec3 } from '@shared/math.js';
 import { Rng } from '@shared/rng.js';
 import {
+  InputFlag,
   MatchPhase,
   SimEventType,
   Team,
@@ -38,6 +39,12 @@ import { BOT_ARCHETYPES, botLoadout, defaultLoadout, type BotArchetype, type Loa
 import { NavGraph } from '@shared/ai/navigation.js';
 import { BotController, DIFFICULTIES, type BotDifficulty } from '@shared/ai/bot.js';
 import { getMap } from '@shared/map/index.js';
+import {
+  RoundPhase,
+  ZombiesDirector,
+  getZombiesMap,
+  hasZombiesLayout,
+} from '@shared/zombies/index.js';
 
 import { InputManager, type InputSettings } from './input.js';
 import { CameraShake, WorldRenderer, type RenderSettings } from './scene/world-renderer.js';
@@ -81,9 +88,14 @@ export class GameClient {
   private readonly shake = new CameraShake();
   private readonly audio = getAudioEngine();
 
+  /** Present only in Zombies. Owns rounds, the horde and the economy. */
+  readonly zombies: ZombiesDirector | null = null;
+
   localId: PlayerId = 0;
   state: ClientState = 'loading';
 
+  /** Edge detection for the interact key, so holding it does not spam purchases. */
+  private usePressed = false;
   private accumulator = 0;
   private lastFrameTime = 0;
   private rafHandle = 0;
@@ -136,6 +148,15 @@ export class GameClient {
     this.audio.setBusVolume('sfx', settings.sfxVolume);
     this.audio.setBusVolume('music', settings.musicVolume);
 
+    if (config.modeId === 'zombies' && hasZombiesLayout(config.mapId)) {
+      this.zombies = new ZombiesDirector(
+        this.sim,
+        this.nav,
+        new Rng(hashSeed(`${config.seed ?? config.mapId}:zm`)),
+        getZombiesMap(config.mapId),
+      );
+    }
+
     this.populate(config);
 
     window.addEventListener('resize', this.onResize);
@@ -146,6 +167,13 @@ export class GameClient {
   // -------------------------------------------------------------------------
 
   private populate(config: MatchConfig): void {
+    // Zombies is co-op: everyone is on one team, and the opposition is spawned
+    // by the director rather than added here.
+    if (this.zombies) {
+      this.populateZombies(config);
+      return;
+    }
+
     const teamBased = this.sim.mode.teamBased;
 
     const local = this.sim.addPlayer({
@@ -171,6 +199,48 @@ export class GameClient {
       });
       this.bots.register(bot.id, archetype, difficulty);
     }
+  }
+
+  /** Local player plus optional co-op bots, all registered as survivors. */
+  private populateZombies(config: MatchConfig): void {
+    const director = this.zombies!;
+    const data = getZombiesMap(config.mapId);
+
+    const local = this.sim.addPlayer({
+      name: config.playerName,
+      team: Team.Allies,
+      loadout: config.loadout,
+    });
+    this.localId = local.id;
+    this.placeAtZombieSpawn(local, data.playerSpawns[0]);
+    director.addSurvivor(local);
+
+    // Co-op partners, capped at four in total by convention.
+    const partners = Math.min(3, Math.max(0, config.botCount));
+    const difficulty = DIFFICULTIES[config.difficulty] ?? DIFFICULTIES.regular!;
+
+    for (let i = 0; i < partners; i++) {
+      const bot = this.sim.addPlayer({
+        name: BOT_NAMES[i % BOT_NAMES.length]!,
+        team: Team.Allies,
+        isBot: true,
+        botSkill: 0.6,
+        loadout: config.loadout,
+      });
+      this.placeAtZombieSpawn(bot, data.playerSpawns[(i + 1) % data.playerSpawns.length]);
+      director.addSurvivor(bot);
+      // The ordinary combat AI handles them: zombies are hostile to Allies, so
+      // bots engage them with no zombies-specific behaviour needed.
+      this.bots.register(bot.id, BOT_ARCHETYPES[i % BOT_ARCHETYPES.length]!, difficulty);
+    }
+  }
+
+  private placeAtZombieSpawn(player: PlayerState, spawn: { x: number; y: number; z: number } | undefined): void {
+    this.sim.spawnPlayer(player);
+    if (!spawn) return;
+    player.position.x = spawn.x;
+    player.position.y = spawn.y;
+    player.position.z = spawn.z;
   }
 
   // -------------------------------------------------------------------------
@@ -231,10 +301,19 @@ export class GameClient {
       const cmd = this.input.poll(TICK_DT, local.adsProgress);
       this.sim.setInput(this.localId, cmd);
 
-      // Respawn on fire press, as COD does.
-      if (!local.alive && local.respawnTimer <= 0 && (cmd.buttons & 32) !== 0) {
+      // Respawn on fire press, as COD does. Zombies has no respawns — you are
+      // revived or you are not.
+      if (!this.zombies && !local.alive && local.respawnTimer <= 0 && (cmd.buttons & 32) !== 0) {
         this.sim.requestRespawn(this.localId);
       }
+
+      // Use key buys whatever the player is standing at.
+      if (this.zombies && (cmd.buttons & InputFlag.Use) !== 0 && !this.usePressed) {
+        const result = this.zombies.interact(this.localId);
+        this.audio.playUi(result.ok ? 'equip' : 'error');
+        if (result.message) this.hud.showAnnounce(result.message.toUpperCase());
+      }
+      this.usePressed = this.zombies ? (cmd.buttons & InputFlag.Use) !== 0 : false;
     }
 
     // --- bots ---------------------------------------------------------------
@@ -242,6 +321,14 @@ export class GameClient {
 
     // --- simulate -----------------------------------------------------------
     const events = this.sim.step(TICK_DT);
+
+    // The director reads the same events everything else does, and returns its
+    // own (round changes, downs, purchases) for the HUD and audio to consume.
+    if (this.zombies) {
+      const zombieEvents = this.zombies.step(TICK_DT, events);
+      for (const e of zombieEvents) events.push(e);
+    }
+
     this.consumeEvents(events);
 
     // --- track motion for bob and footsteps ---------------------------------
@@ -250,6 +337,13 @@ export class GameClient {
       this.lastPosition.x = local.position.x;
       this.lastPosition.y = local.position.y;
       this.lastPosition.z = local.position.z;
+    }
+
+    if (this.zombies && this.zombies.state.phase === RoundPhase.GameOver && this.state === 'playing') {
+      this.state = 'match_end';
+      this.input.releaseLock();
+      this.onMatchEnd?.(null);
+      return;
     }
 
     if (this.sim.world.match.phase === MatchPhase.MatchEnd && this.state === 'playing') {
@@ -428,6 +522,32 @@ export class GameClient {
 
     // The minimap only reveals enemies when the team has earned it.
     if (local) this.hud.setUav(this.sim.radarTime(local.team));
+
+    // Zombies replaces the score bar with round, points and the buy prompt.
+    if (this.zombies && local) {
+      const zs = this.zombies.players.get(this.localId);
+      const near = this.zombies.interactableNear(this.localId);
+      this.hud.setZombiesState({
+        round: this.zombies.state.round,
+        phase: this.zombies.state.phase,
+        points: zs?.points ?? 0,
+        perks: zs?.perks ?? [],
+        downed: zs?.downed ?? false,
+        bleedOut: zs?.bleedOut ?? 0,
+        reviveProgress: zs?.reviveProgress ?? 0,
+        zombiesAlive: Array.from(this.sim.world.players.values()).filter(
+          (p) => p.team === Team.Hostile && p.alive,
+        ).length,
+        prompt: near
+          ? {
+              label: near.def.label,
+              cost: near.cost,
+              usable: near.usable,
+              reason: near.reason,
+            }
+          : null,
+      });
+    }
 
     this.hud.setScoreboardVisible(this.input.scoreboardHeld || this.state === 'match_end');
     this.hud.update(

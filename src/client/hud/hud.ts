@@ -94,6 +94,19 @@ export const DEFAULT_HUD_OPTIONS: HudOptions = {
   crosshairColor: '#e8f4ff',
 };
 
+/** Everything the Zombies HUD shows. Supplied by the director each frame. */
+export interface ZombiesHudState {
+  round: number;
+  phase: string;
+  points: number;
+  perks: string[];
+  downed: boolean;
+  bleedOut: number;
+  reviveProgress: number;
+  zombiesAlive: number;
+  prompt: { label: string; cost: number; usable: boolean; reason: string } | null;
+}
+
 export class Hud {
   readonly root: HTMLElement;
   options: HudOptions;
@@ -130,6 +143,15 @@ export class Hud {
   };
 
   private readonly minimap: Minimap;
+  private readonly zombiesEls: {
+    root: HTMLElement;
+    round: HTMLElement;
+    points: HTMLElement;
+    remaining: HTMLElement;
+    perks: HTMLElement;
+    prompt: HTMLElement;
+    downed: HTMLElement;
+  };
 
   private hitmarker: Hitmarker | null = null;
   private readonly damageIndicators: DamageIndicator[] = [];
@@ -144,6 +166,9 @@ export class Hud {
   private fpsValue = 0;
 
   private scoreboardVisible = false;
+  private zombiesState: ZombiesHudState | null = null;
+  /** Smoothed so the points counter ticks up rather than jumping. */
+  private displayedPoints = 0;
 
   constructor(container: HTMLElement, map: MapDef, options: HudOptions = DEFAULT_HUD_OPTIONS) {
     this.options = { ...options };
@@ -188,6 +213,16 @@ export class Hud {
       respawn: q('.hud-respawn'),
       fps: q('.hud-fps'),
       lowHealth: q('.hud-lowhealth'),
+    };
+
+    this.zombiesEls = {
+      root: q('.hud-zombies'),
+      round: q('.hud-zm-round'),
+      points: q('.hud-zm-points'),
+      remaining: q('.hud-zm-remaining'),
+      perks: q('.hud-zm-perks'),
+      prompt: q('.hud-zm-prompt'),
+      downed: q('.hud-zm-downed'),
     };
 
     this.minimap = new Minimap(q('.hud-minimap-canvas') as HTMLCanvasElement, map);
@@ -381,8 +416,76 @@ export class Hud {
       this.minimap.render(world, player);
     }
 
+    this.renderZombies(dt);
+
     if (this.scoreboardVisible) {
       this.renderScoreboard(world, localId);
+    }
+  }
+
+  /**
+   * Supply this frame's Zombies state.
+   *
+   * Called only in Zombies; the panel stays hidden otherwise, which is why the
+   * multiplayer score bar and this can share the top of the screen without
+   * either needing to know the other exists.
+   */
+  setZombiesState(state: ZombiesHudState): void {
+    this.zombiesState = state;
+    // Flag it on the root so CSS can hide the multiplayer score bar. A sibling
+    // selector cannot reach it: `.hud-top` appears earlier in the template.
+    this.root.dataset.mode = 'zombies';
+  }
+
+  private renderZombies(dt: number): void {
+    const z = this.zombiesState;
+    if (!z) {
+      this.zombiesEls.root.classList.remove('is-visible');
+      return;
+    }
+    this.zombiesEls.root.classList.add('is-visible');
+
+    this.zombiesEls.round.textContent = z.round > 0 ? String(z.round) : '—';
+
+    // Roll the counter toward the real value. A points total that snaps gives no
+    // sense of a stream of small rewards, which is the whole feel of the mode.
+    this.displayedPoints = Math.round(
+      lerp(this.displayedPoints, z.points, clamp01(dt * 12)),
+    );
+    if (Math.abs(this.displayedPoints - z.points) < 2) this.displayedPoints = z.points;
+    this.zombiesEls.points.textContent = this.displayedPoints.toLocaleString();
+
+    this.zombiesEls.remaining.textContent =
+      z.phase === 'intermission' ? 'ROUND CLEAR' : `${z.zombiesAlive} LEFT`;
+
+    this.zombiesEls.perks.innerHTML = z.perks
+      .map((p) => `<span class="zm-perk" data-perk="${escapeHtml(p)}">${escapeHtml(perkShortName(p))}</span>`)
+      .join('');
+
+    // Buy prompt.
+    if (z.prompt) {
+      const cost = z.prompt.cost > 0 ? ` — ${z.prompt.cost}` : '';
+      const detail = z.prompt.usable ? cost : ` — ${z.prompt.reason.toUpperCase()}`;
+      this.zombiesEls.prompt.innerHTML =
+        `<span class="zm-key">F</span> ${escapeHtml(z.prompt.label.toUpperCase())}${escapeHtml(detail)}`;
+      this.zombiesEls.prompt.classList.add('is-visible');
+      this.zombiesEls.prompt.classList.toggle('is-blocked', !z.prompt.usable);
+    } else {
+      this.zombiesEls.prompt.classList.remove('is-visible');
+    }
+
+    // Downed state.
+    if (z.downed) {
+      this.zombiesEls.downed.classList.add('is-visible');
+      const pct = Math.round(z.reviveProgress * 100);
+      this.zombiesEls.downed.innerHTML =
+        `<div class="zm-down-label">YOU ARE DOWN</div>` +
+        `<div class="zm-down-timer">${Math.max(0, z.bleedOut).toFixed(0)}</div>` +
+        (z.reviveProgress > 0
+          ? `<div class="zm-down-revive"><div style="width:${pct}%"></div></div>`
+          : '');
+    } else {
+      this.zombiesEls.downed.classList.remove('is-visible');
     }
   }
 
@@ -698,6 +801,24 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/** Perk id -> a two or three letter tag for the HUD strip. */
+function perkShortName(id: string): string {
+  switch (id) {
+    case 'juggernog':
+      return 'JUG';
+    case 'speed_cola':
+      return 'SPD';
+    case 'double_tap':
+      return 'DT';
+    case 'stamin_up':
+      return 'STA';
+    case 'quick_revive':
+      return 'REV';
+    default:
+      return id.slice(0, 3).toUpperCase();
+  }
+}
+
 function shortWeaponName(id: string): string {
   if (!id) return '';
   return id.replace(/_/g, '-').toUpperCase();
@@ -753,6 +874,17 @@ const HUD_TEMPLATE = `
   <div class="hud-health"><div class="hud-health-fill"></div></div>
   <div class="hud-streaks"></div>
 </div>
+
+<div class="hud-zombies">
+  <div class="hud-zm-top">
+    <div class="hud-zm-block"><span class="hud-zm-label">ROUND</span><span class="hud-zm-round">—</span></div>
+    <div class="hud-zm-block"><span class="hud-zm-label">POINTS</span><span class="hud-zm-points">0</span></div>
+    <div class="hud-zm-remaining">0 LEFT</div>
+  </div>
+  <div class="hud-zm-perks"></div>
+</div>
+<div class="hud-zm-prompt"></div>
+<div class="hud-zm-downed"></div>
 
 <div class="hud-respawn"></div>
 <div class="hud-killcam"></div>

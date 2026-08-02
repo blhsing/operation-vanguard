@@ -14,7 +14,8 @@
 import './styles.css';
 
 import { MAP_IDS, getMap } from '@shared/map/index.js';
-import { MULTIPLAYER_MODE_IDS, getMode } from '@shared/data/modes.js';
+import { PLAYABLE_MODE_IDS, ZOMBIES_MODE_ID, getMode } from '@shared/data/modes.js';
+import { hasZombiesLayout } from '@shared/zombies/index.js';
 import { Team } from '@shared/types.js';
 import { defaultLoadout, type Loadout } from '@shared/sim/loadout.js';
 import { DIFFICULTIES } from '@shared/ai/bot.js';
@@ -266,6 +267,8 @@ function buildMainMenu(): void {
 }
 
 function buildPlayScreen(): void {
+  screens.get('play')?.remove();
+  screens.delete('play');
   const screen = makeScreen('play', 'PLAY', 'Configure the match');
   const b = body(screen);
   b.innerHTML = '';
@@ -286,28 +289,41 @@ function buildPlayScreen(): void {
       (v) => {
         profile.lastMatch.mapId = v;
         saveProfile(profile);
+        buildPlayScreen();
+        showScreen('play');
       },
     ),
   );
+
+  // Zombies only appears for maps that actually have a layout authored for it.
+  const availableModes = PLAYABLE_MODE_IDS.filter(
+    (id) => id !== ZOMBIES_MODE_ID || hasZombiesLayout(profile.lastMatch.mapId),
+  );
+  if (!availableModes.includes(profile.lastMatch.modeId)) {
+    profile.lastMatch.modeId = availableModes[0] ?? 'tdm';
+  }
 
   p.appendChild(
     selectField(
       'Mode',
       profile.lastMatch.modeId,
-      MULTIPLAYER_MODE_IDS.map((id) => ({ value: id, label: getMode(id).name })),
+      availableModes.map((id) => ({ value: id, label: getMode(id).name })),
       (v) => {
         profile.lastMatch.modeId = v;
         saveProfile(profile);
+        // Switching to or from Zombies changes what the other fields mean.
+        buildPlayScreen();
+        showScreen('play');
       },
     ),
   );
 
   p.appendChild(
     sliderField(
-      'Bots',
+      profile.lastMatch.modeId === ZOMBIES_MODE_ID ? 'Co-op partners' : 'Bots',
       profile.lastMatch.botCount,
-      1,
-      17,
+      0,
+      profile.lastMatch.modeId === ZOMBIES_MODE_ID ? 3 : 17,
       1,
       (v) => String(v),
       (v) => {
