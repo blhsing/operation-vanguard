@@ -207,6 +207,13 @@ export interface BotBrain {
   pathCursor: number;
   /** Node the bot is currently heading to, or -1. */
   destination: number;
+  /**
+   * Where the bot is going *strategically*, as opposed to where this tick's goal
+   * wants it. Survives every tactical goal change; see `chooseDestination`.
+   */
+  travelGoal: number;
+  /** Seconds the travel goal has stood, so a hopeless journey eventually ends. */
+  travelAge: number;
   /** Seconds since the path was computed, so we can refresh it. */
   pathAge: number;
   /** Guards against recomputing a path every tick when one can't be found. */
@@ -261,6 +268,8 @@ export function createBrain(
     path: [],
     pathCursor: 0,
     destination: -1,
+    travelGoal: -1,
+    travelAge: 0,
     pathAge: 0,
     pathCooldown: 0,
     strafeDir: rng.chance(0.5) ? 1 : -1,
@@ -329,6 +338,10 @@ export class BotController {
         // Dead bots keep their last aim so the killcam doesn't snap.
         input.yaw = brain.aimYaw;
         input.pitch = brain.aimPitch;
+        // A journey does not survive its traveller. Respawning happens at the
+        // other end of the map, and resuming a route planned from where the bot
+        // died would send it straight back to whatever killed it.
+        brain.travelGoal = -1;
       }
 
       this.sim.setInput(id, input);
@@ -340,6 +353,7 @@ export class BotController {
   private think(player: PlayerState, brain: BotBrain, input: InputCommand, dt: number): void {
     brain.goalTime += dt;
     brain.pathAge += dt;
+    brain.travelAge += dt;
     brain.grenadeCooldown = Math.max(0, brain.grenadeCooldown - dt);
     brain.triggerCooldown = Math.max(0, brain.triggerCooldown - dt);
     brain.pathCooldown = Math.max(0, brain.pathCooldown - dt);
@@ -771,10 +785,50 @@ export class BotController {
         return cover ? cover.id : this.roamDestination(player, brain);
       }
 
-      default:
+      default: {
         void weapon;
-        return this.roamDestination(player, brain);
+        // Advancing is a *journey*, not a per-tick opinion.
+        //
+        // Every goal transition sets `pathAge = 99` above, which discards the
+        // path and re-runs this function — and on a twelve-bot map a bot changes
+        // goal roughly every two seconds. A roam destination, meanwhile, is most
+        // of a map away: eighty metres and fifteen seconds of walking. So the old
+        // code re-rolled the destination four or five times per attempted trip
+        // and the bot abandoned every route about a third of the way along,
+        // arriving only at places it was already standing next to.
+        //
+        // That is the whole reason upper floors go unused. They are not
+        // under-chosen by much — they are chosen and then forgotten, because the
+        // only way up is one staircase in one corner and no bot stays pointed at
+        // it for long enough. Holding the destination across the firefights the
+        // bot gets dragged into on the way is what turns a choice into an
+        // arrival.
+        if (!this.travelGoalStands(player, brain)) {
+          brain.travelGoal = this.roamDestination(player, brain);
+          brain.travelAge = 0;
+        }
+        return brain.travelGoal;
+      }
     }
+  }
+
+  /**
+   * Does the bot's current journey still make sense?
+   *
+   * Only three things end one: arriving, the node going away underneath it, and
+   * running out of patience. Nothing tactical ends it — that is the point.
+   */
+  private travelGoalStands(player: PlayerState, brain: BotBrain): boolean {
+    if (brain.travelGoal < 0 || brain.travelGoal >= this.nav.nodes.length) return false;
+
+    // Arrival is measured in 3D on purpose. A bot standing on the office floor
+    // directly under the mezzanine is 1.4 m away in XZ and has not arrived; the
+    // path cursor's flat test is fine for waypoints but would end the journey
+    // three metres below its destination.
+    if (v3distance(player.position, this.nav.nodes[brain.travelGoal]!.position) < 3) return false;
+
+    // A trip nobody could walk in half a minute is a trip the bot is stuck on.
+    return brain.travelAge < 25;
   }
 
   /**

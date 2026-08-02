@@ -233,6 +233,59 @@ describe('navigation graph', () => {
       sim.removePlayer(player.id);
     }
   });
+
+  /**
+   * A second storey has to be somewhere bots actually go.
+   *
+   * Being *reachable* turns out not to be enough, and the gap between the two is
+   * embarrassingly wide. Bots spend four fifths of a match in the Engage goal,
+   * which routes them at whoever they can see; roaming, the only goal that picks
+   * a destination on the merits, accounts for about 3% of decisions. So an upper
+   * floor is populated only if somebody is already on it — which on a dead-end
+   * mezzanine nobody ever is. Highrise and Dust Market both shipped with upper
+   * decks that validated, rendered, pathed correctly, and had never once had a
+   * bot standing on them.
+   *
+   * The threshold is deliberately a floor's worth of nodes. A four-node perch on
+   * top of a crate is not a storey and nobody should have to justify it here.
+   */
+  it.each(MAP_IDS)('puts bots on the upper floors of %s, not just in reach of them', (mapId) => {
+    const sim = new GameSimulation({ mapId, modeId: 'tdm', seed: `vertical-${mapId}` });
+    const nav = new NavGraph(sim.map, sim.collision);
+
+    const floor = Math.min(...nav.nodes.map((n) => n.position.y));
+    const upper = nav.nodes.filter((n) => n.position.y > floor + 2);
+    if (upper.length < 20) return; // A perch, not a storey.
+
+    const bots = new BotController(sim, nav, new Rng(99));
+    for (let i = 0; i < 10; i++) {
+      const archetype: BotArchetype = BOT_ARCHETYPES[i % BOT_ARCHETYPES.length]!;
+      const p = sim.addPlayer({
+        name: `Bot${i}`,
+        team: i % 2 === 0 ? Team.Allies : Team.Axis,
+        isBot: true,
+        botSkill: 0.5,
+        loadout: botLoadout(archetype, i),
+      });
+      bots.register(p.id, archetype, DIFFICULTIES.regular!);
+    }
+
+    let onUpperFloor = 0;
+    const ticks = Math.round(90 / TICK_DT);
+    for (let i = 0; i < ticks; i++) {
+      bots.update(TICK_DT);
+      sim.step(TICK_DT);
+      if (i % 32 !== 0) continue;
+      for (const p of sim.world.players.values()) {
+        if (p.alive && p.position.y > floor + 2) onUpperFloor++;
+      }
+    }
+
+    expect(
+      onUpperFloor,
+      `${mapId} has a ${upper.length}-node upper floor that no bot ever stood on`,
+    ).toBeGreaterThan(0);
+  });
 });
 
 describe('a live match', () => {

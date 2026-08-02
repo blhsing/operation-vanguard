@@ -67,13 +67,14 @@ function spawnCluster(
   yaw: number,
   count: number,
   spread = 3.0,
+  y = 0,
 ): SpawnPoint[] {
   const lattice: Array<[number, number]> = [
     [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1],
     [1, 1], [-1, 1], [1, -1], [-1, -1], [2, 0], [-2, 0], [0, 2],
   ];
   return lattice.slice(0, count).map(([ox, oz], i) => ({
-    position: vec3(cx + ox * spread, 0.1, cz + oz * spread),
+    position: vec3(cx + ox * spread, y + 0.1, cz + oz * spread),
     yaw: yaw + (i % 3) * 0.16 - 0.16,
     team,
     group,
@@ -263,6 +264,20 @@ function buildSpawns(): SpawnPoint[] {
     ...spawnCluster(33, -23.4, Team.Axis, 'axis_east', FACE_S, 5, 1.8),
     ...spawnCluster(-38, -14, Team.Axis, 'axis_mid_west', FACE_S, 4, 2.6),
     ...spawnCluster(37, -14, Team.Axis, 'axis_mid_east', FACE_S, 4, 2.6),
+
+    // Upper decks, deliberately spawned on.
+    //
+    // A mezzanine nobody starts on is a mezzanine nobody fights over: bots route
+    // toward the enemies they can see, so an empty floor stays empty and the
+    // whole storey is free real estate for whoever thinks to walk up. Seeding it
+    // is what makes the height contested rather than decorative.
+    // The heights sit just *under* each deck rather than on it. Spawn ground is
+    // found by probing three metres up and then downward, so a spawn placed at
+    // deck level on an indoor mezzanine probes through the building's own roof,
+    // snaps to it, and reports itself buried in six inches of concrete.
+    ...spawnCluster(-20, -8, Team.Axis, 'axis_mezz', FACE_N, 5, 1.6, 2.8),
+    ...spawnCluster(19.5, 4, Team.Allies, 'allies_mezz', FACE_N, 5, 1.2, 3.55),
+    ...spawnCluster(27, -8, Team.None, 'ffa_mezz_east', FACE_E, 4, 2.6, 3.55),
 
     ...spawnCluster(-38, 0, Team.None, 'ffa_west', FACE_N, 4, 3.0),
     ...spawnCluster(39, 4, Team.None, 'ffa_east', FACE_S, 4, 2.4),
