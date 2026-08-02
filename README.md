@@ -97,24 +97,51 @@ Then open http://localhost:5173.
 
 ### Running it with no server at all
 
+
 ```bash
 npm run build:standalone
 ```
 
-Produces `dist-standalone/vanguard.html` — one file, about 0.9 MB, which you open
-straight off the disk in Chrome. No web server, no install, no network.
+Produces an ordinary folder you open straight off the disk in Chrome — no web
+server, no install, no network:
 
-That works only because of the zero-binary-assets rule: there is nothing to fetch
-at runtime, so nothing has to be fetched. The build inlines the script and the
-stylesheet into the document and then *refuses to emit* a file that still
-references a sibling, still contains an `import`, or whose script no longer
-parses — because a standalone bundle that works perfectly over http and shows a
-blank page off the disk is very easy to produce by accident.
+```
+dist-standalone/
+  index.html      1 kB
+  vanguard.css   18 kB
+  vanguard.js   901 kB
+```
 
-`npm run verify:standalone` drives that file in real Chrome from a `file://` URL
-over the DevTools protocol: it starts a match through the menu, checks the canvas
-has a live WebGL context and the HUD is counting ammo, and screenshots the
-result.
+One rule of `file://` decides the shape of this. A **module** script is fetched
+with CORS semantics, and a `file://` page has an origin of `null`, which fails —
+so `<script type="module" src="…">` never loads. A **classic** script tag is not
+fetched that way and works fine, as do stylesheets and images. So the bundle is
+built as an IIFE and the build strips `type="module"` and `crossorigin` from the
+tag Vite emits.
+
+Two consequences worth knowing. Rollup cannot code-split a classic bundle, which
+is why there is one `.js` rather than a vendor chunk beside it. And a classic
+script in `<head>` is *not* deferred the way a module script is, so the build adds
+`defer` — without it the app queries the DOM before `<body>` has been parsed, and
+everything looks right in the markup while nothing works.
+
+Any real asset added later lands in the same folder (or inlined as a data URI
+under 4 kB) and loads fine; today there are none, because every texture, sound,
+model and map is generated from code.
+
+The build then *refuses to emit* a folder that would not run off the disk: a
+surviving module script or `crossorigin`, an absolute path, a referenced file
+that was not written, a top-level `import`/`export`, an undeferred head script,
+or a bundle that no longer parses. A build that works over http and shows a blank
+page off the disk is very easy to produce by accident, and the only way never to
+ship one is to make the build fail instead.
+
+`npm run verify:standalone` then drives the real thing in real Chrome from a
+`file://` URL over the DevTools protocol: it starts a match through the menu,
+checks the canvas has a live WebGL context and the HUD is counting ammo, and
+screenshots the result. It observes from the outside on purpose — an earlier
+version reached for a development-only debug handle that does not exist in the
+artefact people actually run.
 
 ```bash
 npm test          # headless match simulation + balance + collision + weapon tests

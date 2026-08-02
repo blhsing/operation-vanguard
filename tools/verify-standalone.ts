@@ -1,11 +1,14 @@
 /**
  * Drive the standalone build in real Chrome, from a `file://` URL.
  *
- * Loading the document proves the bundle is self-contained; it does not prove
- * the game runs. This starts an actual match through the menu, lets it simulate,
- * and reports what the renderer and the simulation are doing — over the DevTools
- * protocol, because there is no other way to script a page Chrome will not let
- * anything else reach.
+ * Loading the document proves the script and stylesheet resolved off the disk;
+ * it does not prove the game runs. This starts an actual match through the menu,
+ * lets it simulate, and reports what the renderer and the simulation are doing —
+ * over the DevTools protocol, because there is no other way to script a page
+ * Chrome will not let anything else reach.
+ *
+ * It also, incidentally, proves the sibling files loaded: nothing renders if the
+ * stylesheet 404s and nothing happens at all if the script does.
  *
  *   npm run verify:standalone
  */
@@ -26,7 +29,7 @@ const CHROME_CANDIDATES = [
 const chrome = CHROME_CANDIDATES.find((p) => existsSync(p));
 if (!chrome) throw new Error('no Chrome found; set one of the paths in this file');
 
-const file = resolve('dist-standalone/vanguard.html');
+const file = resolve('dist-standalone/index.html');
 if (!existsSync(file)) throw new Error('build it first: npm run build:standalone');
 
 const profile = resolve('.verify/cdp');
