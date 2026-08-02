@@ -245,5 +245,54 @@ if (fatal.length > 0) throw new Error(`console errors:\n  ${fatal.join('\n  ')}`
 console.log('clean   no console errors');
 console.log('shot    .verify/standalone-match.png');
 
+/*
+ * The other file somebody is going to double-click.
+ *
+ * Everything above verifies offline/index.html, which is the file that works.
+ * The file at the top of a fresh clone is index.html, it is the obvious one to
+ * open, and from a file:// origin it is a dead end: it points at TypeScript that
+ * only a dev server can transform, so Chrome refuses the module script and the
+ * boot screen sits at 引擎初始化中… for ever with the explanation in a console
+ * nobody has open.
+ *
+ * There is a guard in that file to say so. It shipped broken and stayed broken
+ * for five milestones — it queried for the module script from an inline script
+ * above it, so the node did not exist yet and the test was false every time.
+ * Nothing noticed, because every check that existed pointed at the offline copy,
+ * where the guard has been deliberately deleted. The build asserted the block was
+ * absent; the browser harness loaded the file it is absent from. Two checks, both
+ * green, neither of them looking at the thing that was broken.
+ *
+ * So the harness now opens the entry a person opens.
+ */
+const sourceEntry = resolve('index.html');
+await send('Page.enable');
+// This page is *expected* to log a CORS refusal — that is the condition being
+// detected, not a failure — so the error tally above is closed out first.
+consoleErrors.length = 0;
+await send('Page.navigate', { url: `file://${sourceEntry.replace(/\\/g, '/')}` });
+await sleep(2500);
+
+const guard = await evaluate<{ fired: boolean; pointsAtOffline: boolean; stillSpinning: boolean }>(`
+  (() => {
+    const err = document.querySelector('#boot .boot-error');
+    return {
+      fired: !!err,
+      pointsAtOffline: !!err && err.textContent.includes('offline/index.html'),
+      stillSpinning: !!document.getElementById('boot-status'),
+    };
+  })()
+`);
+
+if (!guard.fired || guard.stillSpinning) {
+  throw new Error(
+    'index.html opened from file:// still hangs on the boot screen — the double-click dead end is back',
+  );
+}
+if (!guard.pointsAtOffline) {
+  throw new Error('the source-entry guard fired but never says to open offline/index.html');
+}
+console.log('source  index.html from file:// explains itself and points at offline/');
+
 ws.close();
 proc.kill();

@@ -35,12 +35,27 @@
            * The playable offline copy is committed at offline/index.html. The
            * guard keys off the module script, which the offline build strips —
            * so this never fires there, and never fires over http either.
+           *
+           * It waits for DOMContentLoaded, and that is not incidental. The first
+           * version of this ran inline and asked for the module script the
+           * moment it executed. The module script is the last line of <body>, so
+           * the parser had not reached it yet and the query returned null every
+           * single time: a guard that shipped, was described in the README as
+           * working, and never once fired. The dead end it was written to
+           * explain went on happening for five milestones.
+           *
+           * That is the same mistake as the one the build refuses to emit — a
+           * classic script reaching for a node the parser has not created — made
+           * three commits after writing the check for it. Waiting for the parse
+           * makes the test independent of where either tag sits, so moving them
+           * around cannot quietly disarm it a second time.
            */
-          if (
-            location.protocol === 'file:' &&
-            document.querySelector('script[type="module"]')
-          ) {
-            document.getElementById('boot').innerHTML =
+          addEventListener('DOMContentLoaded', function () {
+            if (location.protocol !== 'file:') return;
+            if (!document.querySelector('script[type="module"]')) return;
+            var boot = document.getElementById('boot');
+            if (!boot) return;
+            boot.innerHTML =
               '<div class="boot-error">' +
               '<p><strong>這是原始碼進入點，不能直接開啟。</strong></p>' +
               '<p>它指向的是 TypeScript，需要開發伺服器即時轉譯。</p>' +
@@ -48,7 +63,7 @@
               '那份是已建置好的版本，不需要伺服器。</p>' +
               '<p>要開發，請執行 <code>npm run dev</code>。</p>' +
               '</div>';
-          }
+          });
         </script>
         <!-- SOURCE-ONLY:end -->
         <noscript>

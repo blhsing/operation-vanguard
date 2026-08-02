@@ -54,6 +54,30 @@ jobs:
           fi
           echo "offline/ matches the source"
 
+      # The only check that opens the game the way a person does: real Chrome, a
+      # `file://` URL, a match started through the menu — and then the
+      # repository's own index.html, to confirm it explains itself instead of
+      # hanging on the boot screen for ever.
+      #
+      # Its absence is the reason this kept going wrong. Every other check here
+      # verifies a build; none of them opened the result. The source-entry guard
+      # shipped broken and stayed broken for five milestones precisely because
+      # the build asserted it was *absent* from offline/, the browser harness only
+      # ever loaded offline/, and nothing anywhere looked at the file the guard
+      # actually lives in. Two green checks, neither pointed at the defect.
+      - name: Plays from file:// in real Chrome
+        run: |
+          google-chrome --version
+          npm run verify:standalone
+
+      - name: Keep the proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone-match
+          path: .verify/standalone-match.png
+          if-no-files-found: warn
+
       - name: Report bundle size
         run: |
           echo "### Bundle" >> "$GITHUB_STEP_SUMMARY"

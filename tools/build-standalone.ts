@@ -35,9 +35,9 @@ let html = readFileSync(INDEX, 'utf8');
  * weight — and dead weight that would fire if anyone ever changed the condition
  * it keys off.
  *
- * Sliced rather than matched. The block contains a regular expression and a pile
- * of quoted markup, and a pattern that has to survive both is a pattern nobody
- * will dare touch later.
+ * Sliced between markers rather than matched by pattern. The block is a script
+ * full of quoted markup and apostrophes, and a regex that has to survive all of
+ * that is one nobody will dare edit later.
  */
 const GUARD_START = '<!-- SOURCE-ONLY:start -->';
 const GUARD_END = '<!-- SOURCE-ONLY:end -->';
@@ -72,20 +72,35 @@ html = html.replace(/<link\b[^>]*rel="stylesheet"[^>]*>/g, (tag) =>
 );
 
 /*
- * LF, always, whatever platform built it.
+ * LF, always, whatever wrote the source.
  *
  * This folder is committed and CI proves it is current by rebuilding and
- * diffing, so it has to be byte-identical everywhere. `index.html` is derived
- * from a source file that carries the checkout's native line endings, so a
- * Windows build wrote CRLF and a Linux one LF — and .gitattributes marks the
- * folder `-text` precisely so git does *not* paper over that. The result was a
- * check that passed on one platform and failed on the other, which is the worst
- * way for it to be wrong. Normalise at the point of writing instead.
+ * diffing, so it has to be byte-identical everywhere.
+ *
+ * The story originally recorded here — a Windows checkout producing CRLF and a
+ * Linux one LF — was wrong, and wrong in the direction that flattered me. The
+ * repository has carried `* text=auto eol=lf` since M3, so every checkout of
+ * index.html is LF on every platform, and the committed source has never held a
+ * carriage return. What actually happened is smaller and less excusable: an
+ * editor rewrote my working copy of index.html to CRLF while I was adding the
+ * source-entry guard. Git normalised it back to LF in the index, so `git status`
+ * stayed clean and nothing in the diff ever showed it — but the build reads the
+ * working tree, not the index, and copied those bytes straight into a folder
+ * marked `-text` specifically so nothing would normalise them. Two mechanisms
+ * that each hide line endings, pointed at each other.
+ *
+ * `\r\n?` rather than `\r\n`, because the file that caused this contained a
+ * `\r\r\n`, which the narrower pattern turns into `\r\n` and leaves behind.
  */
-html = html.replace(/\r\n/g, '\n');
-writeFileSync(INDEX, html, 'utf8');
+html = html.replace(/\r\n?/g, '\n');
 
 // --- refuse to ship something that only works over http ---------------------
+//
+// These run *before* the write, which they did not used to. The docblock at the
+// top of this file has always promised the build would "refuse to emit" a folder
+// that cannot run off the disk, and for eight milestones it wrote index.html
+// first and threw afterwards — so a failed build left the broken artefact on
+// disk, ready for the next command to pick up.
 
 const problems: string[] = [];
 
@@ -135,8 +150,13 @@ if (!jsName) {
 }
 
 // And nothing emitted may carry a carriage return, or the committed copy stops
-// being reproducible the moment somebody builds it on a different platform.
+// being reproducible the moment something upstream rewrites a source file.
+// index.html is checked in memory because it has not been written yet.
+if (html.includes('\r')) {
+  problems.push('index.html contains CRLF; the committed artefact must be LF everywhere');
+}
 for (const name of present) {
+  if (name === 'index.html') continue;
   if (readFileSync(join(OUT, name), 'utf8').includes('\r')) {
     problems.push(`${name} contains CRLF; the committed artefact must be LF everywhere`);
   }
@@ -145,6 +165,8 @@ for (const name of present) {
 if (problems.length > 0) {
   throw new Error(`this build will not run from file://:\n  - ${problems.join('\n  - ')}`);
 }
+
+writeFileSync(INDEX, html, 'utf8');
 
 const listing = readdirSync(OUT)
   .map((f) => `${f} ${(statSync(join(OUT, f)).size / 1024).toFixed(0)} kB`)

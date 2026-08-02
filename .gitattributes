@@ -6,8 +6,14 @@
 # The offline build is a byte-exact artefact, not source.
 #
 # CI proves it is current by rebuilding and diffing, which only works if git
-# stores exactly what the build wrote. Left alone, git would normalise line
-# endings on the way in and hand them back differently on a Windows checkout —
-# so the check would fail for everyone on Windows and nobody on Linux, which is
-# the worst possible way for it to be wrong.
+# stores exactly what the build wrote rather than a normalised version of it.
+#
+# Note the sharp edge, because it has drawn blood once: `text=auto` above keeps
+# every *source* file LF in the index no matter what an editor does to the
+# working copy, which means a stray CRLF in the working tree is invisible to
+# `git status`. This folder is exempt from that normalisation, so a build that
+# copies bytes out of the working tree can carry the invisible CRLF straight in
+# here, where it is preserved and shows up as spurious drift. The build now
+# normalises line endings itself and refuses to emit a carriage return, which is
+# the guard that actually holds — not this line.
 offline/** -text
