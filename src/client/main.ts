@@ -575,7 +575,7 @@ function buildLoadoutScreen(): void {
   screens.get('loadout')?.remove();
   screens.delete('loadout');
 
-  const screen = makeScreen('loadout', '配裝', '建立職業');
+  const screen = makeScreen('loadout', '配裝', '建立兵種');
   const b = body(screen);
 
   const nav = document.createElement('div');

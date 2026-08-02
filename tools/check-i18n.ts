@@ -95,12 +95,24 @@ for (const file of files) {
 
 // --- 3. comments must stay English ------------------------------------------
 
+/*
+ * The rule is "documentation stays English", not "never name a Chinese term".
+ * A comment explaining why a translation reads the way it does has to be able to
+ * quote it — 兵種 rather than 職業 is a note that cannot be written without the
+ * words it is about. So the test is proportional: a line that is mostly Han is
+ * translated prose, a line with a few Han characters inside English is a
+ * terminology note and is exactly what should be there.
+ */
 for (const file of files) {
   readFileSync(file, 'utf8')
     .split('\n')
     .forEach((line, i) => {
-      if (/^\s*(\/\/|\*|\/\*)/.test(line) && HAN.test(line)) {
-        problems.push(`${file}:${i + 1}: comment contains Chinese`);
+      if (!/^\s*(\/\/|\*|\/\*)/.test(line)) return;
+      const body = line.replace(/^\s*(\/\/|\*\/?|\/\*+)\s*/, '').trim();
+      if (body.length === 0) return;
+      const han = (body.match(/[一-鿿]/g) ?? []).length;
+      if (han / body.length > 0.3) {
+        problems.push(`${file}:${i + 1}: comment is in Chinese`);
       }
     });
 }

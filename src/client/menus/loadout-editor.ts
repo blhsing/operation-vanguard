@@ -109,7 +109,7 @@ function buildSlotPicker(
   active: number,
   onPick: (i: number) => void,
 ): HTMLElement {
-  const p = panel('職業');
+  const p = panel('兵種');
   const row = document.createElement('div');
   row.style.display = 'flex';
   row.style.flexWrap = 'wrap';
@@ -120,7 +120,7 @@ function buildSlotPicker(
     b.className = 'menu-btn' + (i === active ? ' is-primary' : '');
     b.style.padding = '8px 12px';
     b.style.fontSize = '12px';
-    b.textContent = loadout.name || `職業${i + 1}`;
+    b.textContent = loadout.name || `兵種${i + 1}`;
     b.addEventListener('click', () => {
       getAudioEngine().playUi('click');
       onPick(i);
@@ -132,14 +132,14 @@ function buildSlotPicker(
 
   const rename = document.createElement('div');
   rename.className = 'field';
-  rename.innerHTML = '<label>職業名稱</label>';
+  rename.innerHTML = '<label>兵種名稱</label>';
   const input = document.createElement('input');
   input.type = 'text';
   input.maxLength = 20;
   input.value = profile.loadouts[active]?.name ?? '';
   input.addEventListener('change', () => {
     const l = profile.loadouts[active];
-    if (l) l.name = input.value.trim() || `職業${active + 1}`;
+    if (l) l.name = input.value.trim() || `兵種${active + 1}`;
     onPick(active);
   });
   rename.appendChild(input);

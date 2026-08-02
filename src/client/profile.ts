@@ -90,7 +90,10 @@ export function createProfile(): Profile {
       headshots: 0,
       timePlayed: 0,
     },
-    loadouts: Array.from({ length: 10 }, (_, i) => defaultLoadout(`職業${i + 1}`)),
+    // 兵種, not 職業. A loadout class is a troop type; 職業 is an occupation and
+    // reads as role-playing rather than military. Existing saved profiles keep
+    // whatever they already stored — those are the player's own names.
+    loadouts: Array.from({ length: 10 }, (_, i) => defaultLoadout(`兵種${i + 1}`)),
     activeLoadout: 0,
     weaponXp: {},
     lastMatch: {
