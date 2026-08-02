@@ -204,6 +204,23 @@ export enum FailureReason {
 // ---------------------------------------------------------------------------
 
 export const CAMPAIGN = {
+  /**
+   * Seconds an objective may sit at the same progress before its garrison is
+   * released from its posts.
+   *
+   * A posted hostile holds ground, which is the whole reason posts exist — an
+   * unposted one wanders off and follows the player around the map instead of
+   * defending the place it was spawned to defend. But "hold this ground until
+   * somebody comes" and "hold it forever" are different instructions, and only
+   * the second one can deadlock a mission.
+   *
+   * It did, routinely. A kill quota is satisfied by finding the last hostile,
+   * and if that hostile is standing behind a container the player never walks
+   * past, neither of them moves again: Cold Open spent whole runs at a quarter
+   * of its quota with three live enemies in the next lane, everyone at full
+   * health, nothing happening. Whoever is left comes looking eventually.
+   */
+  stalemateRelease: 40,
   /** Seconds of black before the mission starts, for the brief to be read. */
   briefingTime: 4,
   /** Seconds between dying and the checkpoint restoring. */

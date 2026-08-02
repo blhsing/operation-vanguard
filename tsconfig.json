@@ -26,5 +26,5 @@
       "@server/*": ["src/server/*"]
     }
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "tools/**/*.ts", "vite.config.ts", "vitest.config.ts"]
 }

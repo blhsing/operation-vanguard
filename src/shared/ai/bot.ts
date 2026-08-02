@@ -327,6 +327,16 @@ export function createBrain(
 // Scratch
 // ---------------------------------------------------------------------------
 
+/**
+ * How near an ordered position counts as being there, in metres.
+ *
+ * Wider than the 1.4 m waypoint radius on purpose: a waypoint is a place to
+ * pass through, an order is a place to stand, and a bot shuffling to satisfy a
+ * tolerance tighter than its own collision radius looks broken in a way that
+ * standing a metre off never does.
+ */
+const ORDER_ARRIVAL = 1.8;
+
 const _eye = vec3();
 const _targetPoint = vec3();
 const _toTarget = vec3();
@@ -715,6 +725,42 @@ export class BotController {
       }
     }
 
+    /*
+     * Out of waypoints, still not where we were sent: walk the last leg.
+     *
+     * The graph is a sample of the map, not the map. `nearestNode` finds the
+     * closest sampled point to an order, and that can be metres from the order
+     * itself — so a bot routes to it, notices it has arrived, and stops: not
+     * stuck, not confused, just finished with a journey that ended short of the
+     * point of it.
+     *
+     * What that looks like from outside is two bots standing three metres apart
+     * with a container between them, neither able to see the other, neither
+     * moving, for the remaining eight minutes of the mission. Cold Open spent
+     * most of its runs like that, sitting at a quarter of a kill quota with
+     * three live hostiles in the next lane.
+     *
+     * The version of this I tried first had no `canWalkBetween` guard and made
+     * three other missions worse, because a bot whose order sits behind a wall
+     * would happily walk into the wall and stay there. Asking the graph whether
+     * the leg is walkable — the same test its own edges must pass — is what
+     * makes the difference between closing a gap and pressing into masonry.
+     */
+    if (wantX === 0 && wantZ === 0 && brain.orderPosition && !this.currentPathNode(brain)) {
+      if (
+        v3distanceXZ(player.position, brain.orderPosition) > ORDER_ARRIVAL &&
+        this.nav.canWalkBetween(player.position, brain.orderPosition)
+      ) {
+        v3sub(_desired, brain.orderPosition, player.position);
+        _desired.y = 0;
+        v3normalize(_desired, _desired);
+        wantX = _desired.x;
+        wantZ = _desired.z;
+        pathX = _desired.x;
+        pathZ = _desired.z;
+      }
+    }
+
     // Combat footwork: strafe across the target rather than walking at it.
     if (brain.goal === BotGoal.Engage && brain.targetId !== 0) {
       const target = this.sim.world.players.get(brain.targetId);
@@ -836,7 +882,9 @@ export class BotController {
       return;
     }
 
-    const start = this.nav.nearestNode(player.position, 14);
+    // Reachable, not merely nearest: routing from a node on the far side of a
+    // wall produces a first leg that goes through it. See `nearestReachableNode`.
+    const start = this.nav.nearestReachableNode(player.position, 14);
     if (start < 0) {
       brain.pathCooldown = 0.5;
       return;

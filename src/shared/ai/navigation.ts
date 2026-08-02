@@ -70,8 +70,62 @@ export class NavGraph {
   private readonly buckets = new Map<number, number[]>();
   private static readonly BUCKET = 8;
 
+  /** Kept so reachability can be re-tested at query time, not just at build. */
+  private readonly collision: CollisionWorld;
+
   constructor(map: MapDef, collision: CollisionWorld) {
+    this.collision = collision;
     this.build(map, collision);
+  }
+
+  /**
+   * The nearest node the body at `position` can actually walk to.
+   *
+   * `nearestNode` answers a question about distance, which is the right question
+   * for a destination — the path does the routing — and the wrong one for the
+   * place a path starts from. A bot standing in a pocket between two walls has a
+   * node three metres away on the far side of one of them. Routing *from* that
+   * node produces a path whose first leg goes through a wall, so the bot walks
+   * into it, jumps, falls back, and tries again for the rest of the mission.
+   *
+   * That is what held Cracking Tower at thirty per cent: seven of ten runs ended
+   * with the stand-in pressed against a pipe rack at (19.4, -10) on Refinery,
+   * full health, no enemy within fifty metres, oscillating against a wall for
+   * ten minutes because the node it was routing from was on the other side.
+   *
+   * Candidates are tried nearest-first and the search stops at the first one a
+   * capsule can sweep to, so the usual case — standing in the open — costs one
+   * check and returns the same answer `nearestNode` would.
+   */
+  /**
+   * Can a body walk straight from `a` to `b`?
+   *
+   * The same test the edge builder uses, exposed so callers that want to move
+   * *off* the graph — closing the last few metres to a point no node sits on —
+   * ask the identical question rather than a second, subtly different one.
+   */
+  canWalkBetween(a: Vec3, b: Vec3): boolean {
+    return this.walkable(a, b, this.collision);
+  }
+
+  nearestReachableNode(position: Vec3, maxDistance = 30): number {
+    const candidates: Array<{ idx: number; dist: number }> = [];
+    for (const idx of this.nearbyIndices(position, maxDistance)) {
+      const d = v3distance(this.nodes[idx]!.position, position);
+      if (d < maxDistance) candidates.push({ idx, dist: d });
+    }
+    if (candidates.length === 0) return -1;
+    candidates.sort((a, b) => a.dist - b.dist);
+
+    // Bounded, because each check is a run of capsule sweeps and this sits on
+    // the pathing hot path. Past a handful of blocked neighbours the body is
+    // somewhere the graph does not describe, and more probing will not fix that.
+    const LIMIT = 6;
+    for (let i = 0; i < Math.min(LIMIT, candidates.length); i++) {
+      const idx = candidates[i]!.idx;
+      if (this.walkable(position, this.nodes[idx]!.position, this.collision)) return idx;
+    }
+    return candidates[0]!.idx;
   }
 
   private build(map: MapDef, collision: CollisionWorld): void {

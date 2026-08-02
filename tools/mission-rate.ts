@@ -87,7 +87,25 @@ function runOnce(mission: MissionDef, seed: number): Outcome {
     }
   }
 
-  const stuck = director.activeObjectives().map((o) => o.id).join(',') || '(none active)';
+  /*
+   * Read the director's state, not its HUD view.
+   *
+   * This used to call `activeObjectives()` and map `.id` over the result.
+   * `CampaignHudObjective` has no `id` — it carries label, progress and marker
+   * position — so every entry was `undefined`, the join produced an empty
+   * string, and the column fell through to "(none active)" on every single run.
+   * The tool spent its whole life reporting that nothing was blocking, which is
+   * exactly the question it exists to answer.
+   *
+   * It went unnoticed because `tools/` was outside tsconfig's `include`, so the
+   * `tsc --noEmit` that runs ahead of every build never looked at this file.
+   * Both are fixed; this reads `state.objectives`, which is keyed by id.
+   */
+  const stuck =
+    [...director.state.objectives.values()]
+      .filter((o) => o.active && !o.complete)
+      .map((o) => `${o.id}@${o.progress.toFixed(2)}/${o.kills}k`)
+      .join(' ') || '(none active)';
   return { finished: false, seconds: LIMIT_SECONDS, stuckOn: stuck };
 }
 

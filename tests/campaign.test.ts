@@ -310,13 +310,20 @@ describe('every mission', () => {
    * Ten seeds rather than three, and the reason is not flakiness: the seeds are
    * fixed and the simulation is deterministic, so this test gives the same
    * answer every run. The reason is sample size. Measured completion rates sit
-   * between 30% and 70% per mission (`npx tsx tools/mission-rate.ts`), so three
-   * samples is a verdict with a coin's worth of confidence behind it: any change
-   * to movement or AI reshuffles which seeds win, and a mission that got no
-   * worse flips red anyway. That trains you to tune physics until the random
-   * number generator is happy again, which is not engineering. Ten samples of a
-   * 30% mission miss on all ten about three times in a thousand, so a red here
-   * means the mission genuinely stopped being completable.
+   * between about 40% and 100% per mission (`npx tsx tools/mission-rate.ts`), so
+   * three samples is a verdict with a coin's worth of confidence behind it: any
+   * change to movement or AI reshuffles which seeds win, and a mission that got
+   * no worse flips red anyway. That trains you to tune physics until the random
+   * number generator is happy again, which is not engineering.
+   *
+   * Ten samples of a 40% mission miss all ten about six times in a thousand
+   * (0.6^10). An earlier version of this paragraph claimed three in a thousand
+   * for a 30% mission; 0.7^10 is 0.028, which is three in a *hundred*, and being
+   * out by an order of magnitude in the direction that flatters the gate is how
+   * you end up trusting it more than it deserves. The margin is real but it is
+   * not unlimited: if a mission's true rate drops toward 25% this gate starts
+   * failing on merit roughly one run in twenty, and the answer then is to fix
+   * the mission, not to add seeds.
    *
    * Passing runs still stop at the first success, so the cost is only paid by a
    * mission that is actually in trouble.
@@ -340,28 +347,25 @@ describe('every mission', () => {
   );
 
   /**
-   * The three that do not yet finish under the bot stand-in, and where each one
-   * stops. These are listed rather than quietly excluded because the list *is*
-   * the outstanding work, and a skipped test with a name is worth more than a
-   * paragraph in a commit message nobody will read again:
+   * All six finish. There is no outstanding list here any more, and the absence
+   * of one is the point.
    *
-   *   cold_open  — Shipment Yard. Stalls on `push` and `clear`. That map's nav
-   *                graph is the thinnest in the game even after the sampling
-   *                fix, and the stand-in loses track of the last hostiles in
-   *                the container lanes.
-   *   line_three — stalls on `escort`. Marchetti is ordered to the relay and
-   *                sets off, but the route north runs the length of the station
-   *                and he rarely survives it unescorted by a stand-in that is
-   *                itself being shot at.
-   *   last_floor — stalls on `mark`. The stand-in reaches the helipad and does
-   *                not hold the use key long enough while under fire from three
-   *                directions, which is the objective working as intended and
-   *                the stand-in failing it.
+   * What used to sit here was a register of three missions that "do not yet
+   * finish", declaring itself *the* outstanding work. Two of its three entries
+   * were already fixed when it was read back — cold_open and line_three were
+   * both promoted into VERIFIED_COMPLETABLE, one of them without anybody
+   * updating this paragraph — and the third described a defect that did not
+   * exist. It said the stand-in reached the helipad and failed to hold a key
+   * under fire. It never reached the helipad and there was no fire; it stood
+   * eleven metres short with every hostile dead, because a half-metre lip made
+   * the surface unclimbable.
    *
-   * In each case the objective graph advances correctly and the mission is
-   * structurally sound — `advances past its opening objective` covers that. What
-   * is unproven is that they are *winnable*, and that is not a claim to make
-   * from a green test that was written to go green.
+   * So the register was wrong in every entry it still had, and it had been
+   * wrong for milestones. A prose list of known bugs rots exactly as fast as
+   * the code moves and nothing fails when it does. The checks below are the
+   * register now: `puts every objective somewhere reachable` fails on geometry
+   * nobody can stand in, and `can be finished` fails when a mission stops being
+   * winnable. Both of them break the build; a paragraph cannot.
    */
 
   /**
@@ -426,6 +430,59 @@ describe('every mission', () => {
       );
     },
     240_000,
+  );
+
+  /**
+   * Every objective has to be somewhere a body can stand.
+   *
+   * This is the cheap, deterministic version of the expensive test above, and it
+   * is the one that would have caught the defect that took the longest to find.
+   * Last Floor's final two objectives stand on a helipad half a metre above the
+   * roof deck, against a step height of forty-two centimetres. Nothing could
+   * climb it, every nav sample on it was pruned as an unreachable island, and
+   * the mission sat at progress 0.00 with the stand-in parked eleven metres
+   * short and every hostile dead. For five milestones that read as a mission
+   * that was merely hard, and the suite recorded it as one.
+   *
+   * `validate-missions` proves the objective *graph* is sound — dependencies
+   * resolve, quotas are within the hostiles that spawn, placements sit on real
+   * floors. All of that passed. It is a different claim from "you can get
+   * there", and only this one fails on geometry nobody can walk onto.
+   */
+  it.each(CAMPAIGN_MISSIONS.map((m) => [m.id, m] as const))(
+    '%s puts every objective somewhere reachable',
+    (_id, mission) => {
+      const sim = new GameSimulation({ mapId: mission.mapId, modeId: 'campaign', seed: 'reach' });
+      const nav = new NavGraph(sim.map, sim.collision);
+      const start = nav.nearestNode(mission.insertion.position, 30);
+      expect(start, `${mission.id}: the insertion point has no nav node near it`).toBeGreaterThanOrEqual(0);
+
+      for (const def of mission.objectives) {
+        const t = def.trigger;
+        if (t.kind !== 'reach' && t.kind !== 'hold' && t.kind !== 'interact' && t.kind !== 'escort') {
+          continue;
+        }
+        const zone = t.zone;
+        const inside = nav.nodes.filter(
+          (n) =>
+            Math.abs(n.position.x - zone.center.x) <= zone.size.x / 2 &&
+            Math.abs(n.position.y - zone.center.y) <= zone.size.y / 2 &&
+            Math.abs(n.position.z - zone.center.z) <= zone.size.z / 2,
+        );
+
+        expect(
+          inside.length,
+          `${mission.id}/${def.id}: no nav node stands inside the objective zone, so nothing can ever ` +
+            `enter it — the mission cannot be completed by anything that walks`,
+        ).toBeGreaterThan(0);
+
+        const target = nav.nearestNode(inside[0]!.position, 4);
+        expect(
+          nav.findPath(start, target).length,
+          `${mission.id}/${def.id}: the zone has nav nodes but no route reaches them from the insertion point`,
+        ).toBeGreaterThan(0);
+      }
+    },
   );
 
   it.each(CAMPAIGN_MISSIONS.map((m) => [m.id, m] as const))(

@@ -97,6 +97,8 @@ export class CampaignDirector {
   /** Bodies waiting to be removed, with the time left on each. */
   private readonly corpses = new Map<PlayerId, number>();
   private playerId: PlayerId = 0;
+  /** Per-objective stall watch, for releasing a garrison that nobody came to fight. */
+  private readonly stallProgress = new Map<string, { mark: number; time: number }>();
   private checkpoint: Checkpoint | null = null;
   private nextHostileName = 1;
 
@@ -196,6 +198,7 @@ export class CampaignDirector {
     this.consume(incoming);
     this.reapCorpses(dt);
     this.stepWaves(dt);
+    this.breakStalemates(dt);
     this.stepObjectives(dt);
     this.checkFailure();
 
@@ -262,6 +265,46 @@ export class CampaignDirector {
     // And anything still queued to arrive for it.
     for (let i = this.pending.length - 1; i >= 0; i--) {
       if (this.pending[i]!.objectiveId === objectiveId) this.pending.splice(i, 1);
+    }
+  }
+
+  /**
+   * Send the garrison looking when an objective stops moving.
+   *
+   * Posts are what stop a defender wandering off the thing it is defending, and
+   * they work. What they cannot express is "…until someone actually turns up",
+   * so a kill quota whose last hostile is posted in a lane the player never
+   * walks down is not a hard fight, it is two parties standing still until the
+   * mission times out.
+   *
+   * Progress is the signal, not time alone: a firefight that is going badly
+   * still moves the counter, so an objective sitting at exactly the same number
+   * for the better part of a minute is not a fight at all. When that happens the
+   * hostiles that arrived for it are released, and the ordinary roaming
+   * behaviour takes them to the player.
+   */
+  private breakStalemates(dt: number): void {
+    for (const os of this.state.objectives.values()) {
+      if (!os.active || os.complete) {
+        this.stallProgress.delete(os.id);
+        continue;
+      }
+
+      const seen = this.stallProgress.get(os.id);
+      const mark = os.progress + os.kills;
+      if (!seen || seen.mark !== mark) {
+        this.stallProgress.set(os.id, { mark, time: 0 });
+        continue;
+      }
+
+      seen.time += dt;
+      if (seen.time < CAMPAIGN.stalemateRelease) continue;
+      seen.time = 0;
+
+      for (const id of this.hostiles) {
+        if (this.hostileOwner.get(id) !== os.id) continue;
+        this.bots.orderTo(id, null);
+      }
     }
   }
 
