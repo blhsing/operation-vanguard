@@ -29,7 +29,14 @@ import {
   vec3,
   type Vec3,
 } from '../math.js';
-import { CollisionLayer, createSweepHit, type CollisionWorld, type QueryFilter } from '../collision/collision-types.js';
+import {
+  CollisionLayer,
+  createRaycastHit,
+  createSweepHit,
+  type CollisionWorld,
+  type QueryFilter,
+} from '../collision/collision-types.js';
+import { PROP_HEIGHT } from '../map/props.js';
 import type { MapDef } from '../map/map-types.js';
 
 const NAV_FILTER: QueryFilter = { layers: CollisionLayer.Movement };
@@ -284,6 +291,47 @@ export class NavGraph {
     return node.id;
   }
 
+  /**
+   * The floor of the storey an authored point belongs to.
+   *
+   * Authored Y is approximate and has to be dropped onto real geometry — but it
+   * is approximate by centimetres, and what it tells you is which *storey* the
+   * designer meant. The old rule started the probe four metres up and took the
+   * first surface under it, which answers a different question: four metres
+   * clears a whole floor (`PROP_HEIGHT.storey` is 3.4), so on an indoor upper
+   * deck the ray began above that deck's own ceiling and came back with the
+   * wrong one.
+   *
+   * The damage was invisible and total. All fifteen of Highrise's mezzanine
+   * cover points resolved three metres up onto the office roof, an unreachable
+   * island `keepLargestComponent` then deleted; all thirty-four of Subway's
+   * resolved onto the underside of the station ceiling and failed the capsule
+   * test outright. Both maps were left with upper floors built entirely from
+   * value-0.3 grid samples carrying no `isCover` at all — so `findCover`, the
+   * thing that makes a bot hold an angle instead of standing in the open, had
+   * nothing to offer upstairs on either of them. It ran the other way too,
+   * lifting ground cover that sat under a catwalk up onto it.
+   *
+   * So look inside one storey first, and only fall back to the wide probe when
+   * that finds nothing — ground points are legitimately authored at y = 0 on
+   * maps whose floor is a metre up, and dropping those would fragment the graph.
+   *
+   * (A single downward ray, deliberately: `raycastAll` down the whole column is
+   * the more general answer and does not work here, because these probes start
+   * inside the ceiling brush and a multi-hit trace that begins solid silently
+   * loses surfaces below it.)
+   */
+  private floorNear(position: Vec3, collision: CollisionWorld): number {
+    const inStorey = collision.groundHeightAt(
+      position.x,
+      position.z,
+      position.y + 1,
+      PROP_HEIGHT.storey,
+    );
+    if (Number.isFinite(inStorey)) return inStorey;
+    return collision.groundHeightAt(position.x, position.z, position.y + 4, 14);
+  }
+
   private addNode(
     position: Vec3,
     collision: CollisionWorld,
@@ -297,8 +345,8 @@ export class NavGraph {
     },
     minSeparation = 2.2,
   ): number {
-    // Drop to the floor: authored Y values are approximate.
-    const groundY = collision.groundHeightAt(position.x, position.z, position.y + 4, 14);
+    // Drop to the floor the author meant.
+    const groundY = this.floorNear(position, collision);
     const y = Number.isFinite(groundY) ? groundY + 0.05 : position.y;
     const pos = vec3(position.x, y, position.z);
 

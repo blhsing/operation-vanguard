@@ -249,6 +249,48 @@ describe('navigation graph', () => {
    * The threshold is deliberately a floor's worth of nodes. A four-node perch on
    * top of a crate is not a storey and nobody should have to justify it here.
    */
+  /**
+   * The designer's cover points on an upper floor have to survive into the graph.
+   *
+   * `findCover` — the only thing that makes a bot hold an angle rather than
+   * stand in the open — looks exclusively at nodes carrying `isCover`, and those
+   * come exclusively from authored cover points. A point that gets snapped to
+   * the wrong storey while being dropped onto geometry is gone without a trace:
+   * the map still validates, still renders, still paths, and the floor it was
+   * meant to defend simply has no tactical positions on it.
+   *
+   * That is not hypothetical. Subway shipped with all thirty-four of its
+   * mezzanine cover points resolving onto the underside of the station ceiling
+   * and failing the capsule test, and Highrise with eleven of fifteen landing on
+   * the office roof, an unreachable island the connectivity pass then deleted.
+   */
+  it.each(MAP_IDS)('keeps the authored upper-floor cover on %s', (mapId) => {
+    const sim = new GameSimulation({ mapId, modeId: 'tdm' });
+    const nav = new NavGraph(sim.map, sim.collision);
+
+    const floor = Math.min(...nav.nodes.map((n) => n.position.y));
+    if (nav.nodes.filter((n) => n.position.y > floor + 2).length < 20) return; // A perch.
+
+    const authored = sim.map.coverPoints.filter((c) => c.position.y > floor + 2);
+    if (authored.length === 0) return;
+
+    const cover = nav.nodes.filter((n) => n.isCover);
+    const survived = authored.filter((c) =>
+      cover.some(
+        (n) =>
+          Math.hypot(n.position.x - c.position.x, n.position.z - c.position.z) < 2.5 &&
+          Math.abs(n.position.y - c.position.y) < 2.5,
+      ),
+    ).length;
+
+    // Not all of them: two points inside the merge radius legitimately collapse
+    // into one node that carries both their metadata. Most of them, though.
+    expect(
+      survived / authored.length,
+      `${mapId}: only ${survived} of ${authored.length} authored upper cover points reached the graph`,
+    ).toBeGreaterThan(0.6);
+  });
+
   it.each(MAP_IDS)('puts bots on the upper floors of %s, not just in reach of them', (mapId) => {
     const sim = new GameSimulation({ mapId, modeId: 'tdm', seed: `vertical-${mapId}` });
     const nav = new NavGraph(sim.map, sim.collision);

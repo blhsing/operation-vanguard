@@ -6,8 +6,12 @@
  * upstairs") have numeric answers, and a number you look at every time you touch
  * a map is worth more than an opinion formed by watching one round.
  *
- *   npx tsx tools/soak.ts              # every map, 180 s
+ * Metrics like upper-floor occupancy are noisy across seeds, so anything you are
+ * about to draw a conclusion from should be run over several. Pass a seed count.
+ *
+ *   npx tsx tools/soak.ts              # every map, 180 s, one seed
  *   npx tsx tools/soak.ts subway 300   # one map, 300 s
+ *   npx tsx tools/soak.ts all 120 5    # every map, 120 s, five seeds, averaged
  */
 
 import { TICK_DT } from '../src/shared/constants.js';
@@ -22,6 +26,7 @@ import { MAP_IDS, getMap } from '../src/shared/map/index.js';
 const arg = process.argv[2];
 const maps = arg && MAP_IDS.includes(arg) ? [arg] : MAP_IDS;
 const seconds = Number(process.argv[3] ?? (arg && !MAP_IDS.includes(arg) ? arg : 180)) || 180;
+const seeds = Math.max(1, Number(process.argv[4] ?? 1) || 1);
 const BOTS = 12;
 
 /**
@@ -41,9 +46,11 @@ console.log(
 );
 
 for (const mapId of maps) {
-  const sim = new GameSimulation({ mapId, modeId: 'tdm', seed: `soak-${mapId}` });
+ const agg = { kills: 0, shots: 0, hits: 0, spawns: 0, travel: 0, maxY: -Infinity, upper: 0, samples: 0, routed: 0, routedUpper: 0, wall: 0 };
+ for (let s = 0; s < seeds; s++) {
+  const sim = new GameSimulation({ mapId, modeId: 'tdm', seed: `soak-${mapId}-${s}` });
   const nav = new NavGraph(sim.map, sim.collision);
-  const bots = new BotController(sim, nav, new Rng(4242));
+  const bots = new BotController(sim, nav, new Rng(4242 + s * 101));
 
   for (let i = 0; i < BOTS; i++) {
     const archetype: BotArchetype = BOT_ARCHETYPES[i % BOT_ARCHETYPES.length]!;
@@ -105,14 +112,19 @@ for (const mapId of maps) {
       }
     }
   }
-  const wall = (performance.now() - t0) / 1000;
+  agg.wall += (performance.now() - t0) / 1000;
+  agg.kills += kills; agg.shots += shots; agg.hits += hits; agg.spawns += spawns;
+  agg.travel += travel; agg.upper += upperSamples; agg.samples += samples;
+  agg.routed += routed; agg.routedUpper += routedUpper;
+  if (maxY > agg.maxY) agg.maxY = maxY;
+ }
 
-  const pct = (n: number, d: number) => `${((n / Math.max(1, d)) * 100).toFixed(1)}%`;
-  console.log(
-    `${mapId.padEnd(14)} ${String(kills).padStart(5)} ${String(shots).padStart(5)} ` +
-      `${pct(hits, shots).padStart(5)} ${String(spawns).padStart(6)} ` +
-      `${(travel / BOTS).toFixed(0).padStart(6)}m ${maxY.toFixed(1).padStart(5)} ` +
-      `${pct(upperSamples, samples).padStart(7)} ${pct(routedUpper, routed).padStart(8)} ` +
-      `${(seconds / wall).toFixed(0).padStart(9)}x  (${getMap(mapId).name})`,
-  );
+ const pct = (n: number, d: number) => `${((n / Math.max(1, d)) * 100).toFixed(1)}%`;
+ console.log(
+   `${mapId.padEnd(14)} ${(agg.kills / seeds).toFixed(0).padStart(5)} ${(agg.shots / seeds).toFixed(0).padStart(5)} ` +
+     `${pct(agg.hits, agg.shots).padStart(5)} ${(agg.spawns / seeds).toFixed(0).padStart(6)} ` +
+     `${(agg.travel / BOTS / seeds).toFixed(0).padStart(6)}m ${agg.maxY.toFixed(1).padStart(5)} ` +
+     `${pct(agg.upper, agg.samples).padStart(7)} ${pct(agg.routedUpper, agg.routed).padStart(8)} ` +
+     `${(seconds * seeds / agg.wall).toFixed(0).padStart(9)}x  (${getMap(mapId).name})`,
+ );
 }
