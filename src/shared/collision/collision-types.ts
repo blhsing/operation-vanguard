@@ -250,9 +250,21 @@ export const SURFACE_ROUGHNESS: Record<SurfaceType, number> = {
   [ST.Brick]: 0.9,
 };
 
+/**
+ * Metalness per surface, for the physical shader.
+ *
+ * `Metal` is deliberately far below the ~0.9 a real metal would take. A metal
+ * has no diffuse response: under a physical shader it is only what it reflects,
+ * and this game ships zero binary assets and therefore has no environment map.
+ * At a physically honest value every metal surface the sun does not directly
+ * strike renders pure black — a shaded steel warehouse becomes a hole cut in the
+ * world, and an underground station's rolling stock becomes a silhouette. A
+ * painted, weathered value is the correct trade for a game with nothing to
+ * reflect.
+ */
 export const SURFACE_METALNESS: Record<SurfaceType, number> = {
   [ST.Concrete]: 0,
-  [ST.Metal]: 0.85,
+  [ST.Metal]: 0.3,
   [ST.Wood]: 0,
   [ST.Dirt]: 0,
   [ST.Grass]: 0,

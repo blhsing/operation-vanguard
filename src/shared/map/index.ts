@@ -17,11 +17,17 @@ import type { MapDef } from './map-types.js';
 import { CROSSFIRE } from './maps/crossfire.js';
 import { REFINERY } from './maps/refinery.js';
 import { SHIPMENT_YARD } from './maps/shipment-yard.js';
+import { HIGHRISE } from './maps/highrise.js';
+import { DUST_MARKET } from './maps/dust-market.js';
+import { SUBWAY } from './maps/subway.js';
 
 export const MAPS: Record<string, MapDef> = {
   [CROSSFIRE.id]: CROSSFIRE,
   [REFINERY.id]: REFINERY,
   [SHIPMENT_YARD.id]: SHIPMENT_YARD,
+  [HIGHRISE.id]: HIGHRISE,
+  [DUST_MARKET.id]: DUST_MARKET,
+  [SUBWAY.id]: SUBWAY,
 };
 
 export const MAP_IDS: string[] = Object.keys(MAPS);

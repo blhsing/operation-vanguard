@@ -14,7 +14,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { TICK_DT } from '../src/shared/constants.js';
-import { MatchPhase, SimEventType, Team, type SimEvent } from '../src/shared/types.js';
+import {
+  InputFlag,
+  MatchPhase,
+  SimEventType,
+  Team,
+  createEmptyInput,
+  type SimEvent,
+} from '../src/shared/types.js';
 import { GameSimulation } from '../src/shared/sim/game.js';
 import { BOT_ARCHETYPES, botLoadout, type BotArchetype } from '../src/shared/sim/loadout.js';
 import { NavGraph } from '../src/shared/ai/navigation.js';
@@ -127,6 +134,104 @@ describe('navigation graph', () => {
     const ground = nav.nearestNode({ x: 0, y: 0, z: 20 }, 20);
     const path = nav.findPath(ground, elevated[0]!.id);
     expect(path.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * Every spawn must land a bot somewhere the graph knows about.
+   *
+   * This is the check that catches a map whose bounds let the sampler walk on
+   * the *roof*: the rooftop is large, flat and perfectly connected, so it wins
+   * the largest-component vote and the playable interior is pruned away. The
+   * map still validates, still renders, and every bot in it stands still.
+   */
+  it.each(MAP_IDS)('puts a nav node on the same floor as every spawn on %s', (mapId) => {
+    const sim = new GameSimulation({ mapId, modeId: 'tdm' });
+    const nav = new NavGraph(sim.map, sim.collision);
+
+    // Same floor, not merely nearby: a graph that has drifted onto the roof
+    // still answers `nearestNode` for a spawn on the platform below it, and the
+    // bot then paths from a node nine metres above its own head.
+    const orphaned = sim.map.spawns.filter((s) => {
+      const idx = nav.nearestNode(s.position, 14);
+      if (idx < 0) return true;
+      return Math.abs(nav.nodes[idx]!.position.y - s.position.y) > 2;
+    });
+    expect(orphaned.map((s) => `${s.group} @ ${s.position.x},${s.position.z}`)).toEqual([]);
+  });
+
+  /**
+   * Every floor above the ground must be reachable *from* the ground.
+   *
+   * A one-way drop down is not enough to keep an upper deck alive: the
+   * connectivity pass floods outward following edges, so a deck that can only be
+   * left is never reached from below and gets pruned as an island — which is how
+   * a hand-authored mezzanine ends up as scenery no bot has ever stood on.
+   *
+   * The reverse is deliberately not asserted. A bot standing on a crate does not
+   * need a planned route down; it walks off the edge and the movement code does
+   * the rest. Demanding a modelled descent from every perch would fail maps that
+   * are perfectly playable.
+   */
+  it.each(MAP_IDS)('connects every upper floor on %s to the ground', (mapId) => {
+    const sim = new GameSimulation({ mapId, modeId: 'tdm' });
+    const nav = new NavGraph(sim.map, sim.collision);
+
+    const floor = Math.min(...nav.nodes.map((n) => n.position.y));
+    const upper = nav.nodes.filter((n) => n.position.y > floor + 2);
+    if (upper.length === 0) return; // A single-storey map is allowed.
+
+    const ground = nav.nodes.find((n) => n.position.y <= floor + 0.5)!;
+    const unreachable = upper.filter((u) => nav.findPath(ground.id, u.id).length === 0);
+    expect(
+      unreachable.map((u) => `(${u.position.x}, ${u.position.y.toFixed(1)}, ${u.position.z})`),
+    ).toEqual([]);
+  });
+
+  /**
+   * A `ladder` link is a claim that a player can walk this climb on foot.
+   *
+   * Verify the claim by walking it: hold forward along the link and check the
+   * player actually ends up on the upper deck. Stairs that stop half a metre
+   * short of the surface they serve look completely correct in the map file and
+   * in the renderer, and are impassable.
+   */
+  it.each(MAP_IDS)('backs every ladder link on %s with a climbable route', (mapId) => {
+    const sim = new GameSimulation({ mapId, modeId: 'tdm' });
+    const ladders = sim.map.navLinks.filter((l) => l.kind === 'ladder' && l.to.y > l.from.y + 1);
+    if (ladders.length === 0) return;
+
+    for (const link of ladders) {
+      const player = sim.addPlayer({ name: 'Climber', team: Team.Allies, isBot: false });
+      sim.step(TICK_DT);
+      player.position.x = link.from.x;
+      player.position.y = link.from.y + 0.1;
+      player.position.z = link.from.z;
+      player.velocity.x = 0;
+      player.velocity.y = 0;
+      player.velocity.z = 0;
+
+      // Face the top of the climb and walk at it.
+      const yaw = Math.atan2(-(link.to.x - link.from.x), -(link.to.z - link.from.z));
+      let peak = -Infinity;
+      for (let i = 0; i < Math.round(10 / TICK_DT); i++) {
+        const cmd = createEmptyInput();
+        cmd.dt = TICK_DT;
+        cmd.seq = i;
+        cmd.tick = sim.world.tick;
+        cmd.yaw = yaw;
+        cmd.moveForward = 1;
+        cmd.buttons |= InputFlag.Sprint;
+        sim.setInput(player.id, cmd);
+        sim.step(TICK_DT);
+        if (player.position.y > peak) peak = player.position.y;
+      }
+
+      expect(
+        peak,
+        `${mapId}: ladder to (${link.to.x}, ${link.to.y}, ${link.to.z}) tops out at ${peak.toFixed(2)}`,
+      ).toBeGreaterThanOrEqual(link.to.y - 0.5);
+      sim.removePlayer(player.id);
+    }
   });
 });
 

@@ -8,9 +8,13 @@ A Call of Duty–style multiplayer FPS that runs entirely in a browser tab.
 
 ## What it is
 
-A complete arena shooter: three-lane maps, a 36-weapon arsenal with attachments,
-create-a-class, perks, killstreaks, ranked progression, and bots that have to
-actually see you before they can shoot you.
+A complete arena shooter: six three-lane maps, a 36-weapon arsenal with
+attachments, create-a-class, perks, killstreaks, ranked progression, and bots
+that have to actually see you before they can shoot you.
+
+The maps are Crossfire (village crossroads), Refinery (industrial), Shipment
+Yard (tiny, relentless), Highrise (two towers and an open roof), Dust Market
+(a bazaar at noon) and Subway (an underground station with no sky at all).
 
 Plus **Zombies** — round-based co-op survival with a points economy, wall buys,
 the Mystery Box, Pack-a-Punch, perk machines, and a down-and-revive loop.
