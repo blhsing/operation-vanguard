@@ -41,6 +41,15 @@ export interface RenderSettings {
   filmGrain: boolean;
   /** Extra brightness for players on poor displays. */
   brightness: number;
+  /**
+   * How much of the camera motion to keep, 0..1.
+   *
+   * Screen shake, weapon sway and view kick are the parts of a shooter most
+   * likely to make somebody motion sick, and they are pure presentation — the
+   * simulation does not know about any of it. Zero is a game that still plays
+   * identically and does not move the camera on its own.
+   */
+  motionScale: number;
 }
 
 export const DEFAULT_RENDER_SETTINGS: RenderSettings = {
@@ -52,6 +61,7 @@ export const DEFAULT_RENDER_SETTINGS: RenderSettings = {
   motionBlur: false,
   filmGrain: true,
   brightness: 1,
+  motionScale: 1,
 };
 
 /**

@@ -49,6 +49,40 @@ export type ActionName =
 
 export type KeyBindings = Record<ActionName, string[]>;
 
+/**
+ * What each action is called on the controls screen.
+ *
+ * Lives here rather than in the menu so it cannot drift from the actions it
+ * names — the screen that used to describe the controls was a hand-written list
+ * and had no way of knowing when a binding changed underneath it.
+ */
+export const ACTION_LABELS: Record<ActionName, string> = {
+  forward: '前進',
+  back: '後退',
+  left: '向左',
+  right: '向右',
+  jump: '跳躍／翻越',
+  crouch: '蹲下／滑鏟',
+  prone: '趴下',
+  sprint: '衝刺',
+  fire: '開火',
+  ads: '瞄準',
+  reload: '裝填',
+  melee: '近戰',
+  use: '互動／購買',
+  lethal: '致命裝備',
+  tactical: '戰術裝備',
+  swap: '切換武器',
+  leanLeft: '向左傾身',
+  leanRight: '向右傾身',
+  fieldUpgrade: '戰地升級',
+  scoreboard: '計分板',
+  pause: '暫停',
+  killstreak1: '連殺獎勵 1',
+  killstreak2: '連殺獎勵 2',
+  killstreak3: '連殺獎勵 3',
+};
+
 /** Defaults follow the PC shooter convention players already have muscle memory for. */
 export const DEFAULT_BINDINGS: KeyBindings = {
   forward: ['KeyW', 'ArrowUp'],

@@ -26,6 +26,10 @@ import { GameClient, type ClientSettings, type MatchConfig } from './game-client
 import type { QualityTier } from './scene/world-renderer.js';
 import { getAudioEngine } from './audio/index.js';
 import { loadProfile, saveProfile, type Profile } from './profile.js';
+import { renderKeybinds } from './menus/keybinds.js';
+
+/** Teardown for the key-capture listeners the controls screen installs. */
+let disposeKeybinds: (() => void) | null = null;
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -465,6 +469,13 @@ function buildSettingsScreen(): void {
       applyLiveSettings();
     }),
   );
+  video.appendChild(
+    sliderField('畫面晃動', r.motionScale, 0, 1, 0.05, (v) => (v === 0 ? '關閉' : `${Math.round(v * 100)}%`), (v) => {
+      r.motionScale = v;
+      applyLiveSettings();
+    }, '螢幕晃動、走位側傾與後座位移。設為關閉時，鏡頭只會往你指的方向轉，其餘完全不動 — 遊戲判定完全不受影響。'),
+  );
+  video.appendChild(toggleField('底片顆粒', r.filmGrain, (v) => { r.filmGrain = v; applyLiveSettings(); }));
   wrap.appendChild(video);
 
   // --- audio --------------------------------------------------------------
@@ -562,32 +573,23 @@ function buildControlsScreen(): void {
   b.appendChild(nav);
 
   const p = panel('鍵盤與滑鼠');
-  const rows: Array<[string, string]> = [
-    ['移動', 'W A S D'],
-    ['衝刺', 'Shift'],
-    ['戰術衝刺', 'Shift（連按兩下）'],
-    ['跳躍／翻越', 'Space'],
-    ['蹲下', 'Ctrl或C'],
-    ['滑鏟', '衝刺時按Ctrl'],
-    ['趴下', 'Z'],
-    ['開火', '滑鼠左鍵'],
-    ['瞄準', '滑鼠右鍵'],
-    ['重新裝填', 'R'],
-    ['近戰', 'V或滑鼠中鍵'],
-    ['切換武器', '1 / 2'],
-    ['致命裝備', 'G'],
-    ['戰術裝備', 'Q'],
-    ['戰地升級', 'X'],
-    ['連殺獎勵', '3 / 4 / 5'],
-    ['計分板', 'Tab（長按）'],
-    ['暫停', 'Escape'],
-  ];
-  for (const [action, key] of rows) {
-    const row = document.createElement('div');
-    row.className = 'field';
-    row.innerHTML = `<label>${action}</label><span></span><span class="value">${key}</span>`;
-    p.appendChild(row);
-  }
+  const hint = document.createElement("p");
+  hint.style.cssText = "color:var(--ink-dim);font-size:13px;line-height:1.7";
+  hint.textContent = '點一下按鍵欄位即可重新設定；再按 Escape 取消。每個動作可以設定兩個按鍵。';
+  p.appendChild(hint);
+
+  const binds = document.createElement("div");
+  p.appendChild(binds);
+  disposeKeybinds?.();
+  disposeKeybinds = renderKeybinds(binds, {
+    settings: profile.settings.input,
+    onChange: () => {
+      saveProfile(profile);
+      // Apply immediately, so a rebind made from the pause menu takes effect
+      // in the match behind it rather than at the next launch.
+      if (client) client.input.settings = profile.settings.input;
+    },
+  });
   b.appendChild(p);
 
   const gp = panel('遊戲手把');

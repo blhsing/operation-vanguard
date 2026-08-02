@@ -776,10 +776,26 @@ export class GameClient {
 
     this.shake.sample(_shakeOut);
 
+    /*
+     * Everything the camera does on its own, scaled by one accessibility knob.
+     *
+     * Shake, strafe roll and slide tilt are pure presentation — the simulation
+     * has no idea they happen — and they are also the parts of a shooter most
+     * likely to make somebody motion sick. At zero the camera goes exactly where
+     * the player points it and nowhere else, and the game is otherwise
+     * identical: same hitboxes, same recoil, same everything that decides a
+     * fight.
+     */
+    const motion = this.settings.render.motionScale;
+    _shakeOut.yaw *= motion;
+    _shakeOut.pitch *= motion;
+    _shakeOut.roll *= motion;
+
     // Roll from strafing and sliding: small, but it is most of what sells
     // movement without costing the player any information.
     const strafe = clamp(local.velocity.x * Math.cos(local.yaw) - local.velocity.z * Math.sin(local.yaw), -6, 6) / 6;
-    const targetRoll = -strafe * 0.02 + (local.moveState === 4 ? 0.12 : 0) + local.lean * 0.38;
+    const targetRoll =
+      (-strafe * 0.02 + (local.moveState === 4 ? 0.12 : 0)) * motion + local.lean * 0.38;
     this.cameraRoll = damp(this.cameraRoll, targetRoll, 8, dt);
 
     cam.rotation.set(0, 0, 0);

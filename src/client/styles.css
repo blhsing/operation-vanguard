@@ -1320,3 +1320,28 @@ canvas#game {
   font-weight: 600;
 }
 .hud-campaign[data-failed='true'] .hud-cmp-label { color: #ff5a4a; }
+
+/* --- key binding ---------------------------------------------------------- */
+/* Two slots per action sit in the value column of an ordinary field row. */
+.keybind {
+  font-family: var(--font-num);
+  font-size: calc(12px * var(--hud-scale, 1));
+  letter-spacing: calc(0.06em * var(--track));
+  color: #e8e8e8;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 2px;
+  padding: 4px 10px;
+  margin-left: 6px;
+  min-width: 84px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.keybind:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); }
+/* Unmistakable while it is swallowing the next key you press. */
+.keybind.is-capturing {
+  background: var(--accent, #ff8a2b);
+  border-color: var(--accent, #ff8a2b);
+  color: #12140f;
+  font-weight: 600;
+}
