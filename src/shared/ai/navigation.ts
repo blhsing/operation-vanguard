@@ -248,7 +248,29 @@ export class NavGraph {
    * invisible to the AI and bots never use the map's verticality.
    */
   private sampleGrid(map: MapDef, collision: CollisionWorld): void {
-    const SPACING = 3.0;
+    /**
+     * Sampling density scales with the map, and it has to.
+     *
+     * A fixed three-metre grid is right for an eighty-metre map with lanes you
+     * could drive down. On a thirty-six-metre container yard it is a disaster:
+     * the walkable gaps between containers are about two metres wide, so the
+     * grid steps straight over them and lands on the container roofs instead.
+     * Adjacent samples then differ by three to five metres in height, the edge
+     * builder refuses to connect across that, and every interior sample becomes
+     * its own island — which `keepLargestComponent` deletes in favour of the one
+     * genuinely contiguous surface, the perimeter walkway.
+     *
+     * Shipment Yard shipped like that. Its entire interior — a hundred and
+     * thirty-six standable sample points, three domination flags and all
+     * thirty-three of its authored cover positions — was invisible to every bot
+     * in the game, which navigated a hollow ring around the outside of a map
+     * whose whole idea is the middle.
+     */
+    const extent = Math.max(
+      map.bounds.max.x - map.bounds.min.x,
+      map.bounds.max.z - map.bounds.min.z,
+    );
+    const SPACING = Math.max(1.5, Math.min(3.0, extent / 26));
     const minX = map.bounds.min.x + 1;
     const maxX = map.bounds.max.x - 1;
     const minZ = map.bounds.min.z + 1;

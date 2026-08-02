@@ -219,6 +219,19 @@ export interface BotBrain {
   /** Guards against recomputing a path every tick when one can't be found. */
   pathCooldown: number;
 
+  /**
+   * Seconds spent trying to move and not moving.
+   *
+   * A bot pressed into a container corner slides along one face and back along
+   * the other forever: it is walking, so nothing looks wrong, and it never
+   * arrives. Jumping alone does not clear it — the obstruction is beside the
+   * bot, not under it.
+   */
+  stuckTime: number;
+  /** Seconds left on a lateral shove out of a wedge, and which way. */
+  unstickTimer: number;
+  unstickDir: number;
+
   /** Strafe direction while fighting, flipped periodically. */
   strafeDir: number;
   strafeTimer: number;
@@ -238,6 +251,25 @@ export interface BotBrain {
 
   /** Position the bot is holding, when in Hold. */
   holdNode: number;
+  /**
+   * Whose shoulder this bot fights over, or 0.
+   *
+   * Set for campaign allies. It changes exactly one thing — where the bot
+   * goes when it has nothing to shoot at — because that is the whole of what
+   * separates a squadmate from any other friendly bot. Everything else about
+   * fighting alongside someone already falls out of being on their team.
+   */
+  leaderId: PlayerId;
+  /**
+   * Somewhere the bot has been told to be, overriding its own judgement about
+   * where to roam. Null when nobody is giving orders.
+   *
+   * This is what a campaign objective marker means to a bot. It deliberately
+   * does not touch combat: an ordered bot still takes cover, still breaks
+   * contact when hurt, and still shoots back — it just knows where it is
+   * supposed to end up when it is done.
+   */
+  orderPosition: Vec3 | null;
   /** Randomised so a squad of bots doesn't move as one organism. */
   personalityOffset: number;
 }
@@ -272,12 +304,21 @@ export function createBrain(
     travelAge: 0,
     pathAge: 0,
     pathCooldown: 0,
+    stuckTime: 0,
+    unstickTimer: 0,
+    // Not drawn from the RNG. Every draw here shifts the whole deterministic
+    // stream for every bot in the match, so adding a field to this struct can
+    // silently change the outcome of a replay that has nothing to do with it —
+    // and this one is flipped on first use anyway.
+    unstickDir: 1,
     strafeDir: rng.chance(0.5) ? 1 : -1,
     strafeTimer: 0,
     triggerCooldown: 0,
     grenadeCooldown: rng.range(2, 8),
     decisionAccum: 0,
     holdNode: -1,
+    leaderId: 0,
+    orderPosition: null,
     personalityOffset: rng.range(0, 1000),
   };
 }
@@ -308,6 +349,33 @@ export class BotController {
 
   register(playerId: PlayerId, archetype: BotArchetype, difficulty: BotDifficulty): void {
     this.brains.set(playerId, createBrain(playerId, archetype, difficulty, this.rng));
+  }
+
+  /**
+   * Make this bot follow someone.
+   *
+   * Campaign allies are ordinary bots on the player's team: they already see
+   * hostiles, take cover and shoot. The only thing they do not do on their own
+   * is stay with you, because roaming sends them at the far corner of the map.
+   */
+  setLeader(playerId: PlayerId, leaderId: PlayerId): void {
+    const brain = this.brains.get(playerId);
+    if (brain) brain.leaderId = leaderId;
+  }
+
+  /**
+   * Send a bot somewhere, or clear its orders with null.
+   *
+   * Orders outrank following a leader, which outranks the bot's own roaming.
+   * That ordering is the whole hierarchy and it is deliberately shallow.
+   */
+  orderTo(playerId: PlayerId, position: Vec3 | null): void {
+    const brain = this.brains.get(playerId);
+    if (!brain) return;
+    // Re-issuing the same order must not restart the journey every tick.
+    if (position && brain.orderPosition && v3distance(position, brain.orderPosition) < 1) return;
+    brain.orderPosition = position ? vec3(position.x, position.y, position.z) : null;
+    brain.travelGoal = -1;
   }
 
   unregister(playerId: PlayerId): void {
@@ -621,12 +689,16 @@ export class BotController {
     input: InputCommand,
     dt: number,
   ): void {
-    void dt;
     this.ensurePath(player, brain, weapon);
 
     const node = this.currentPathNode(brain);
     let wantX = 0;
     let wantZ = 0;
+
+    // Kept aside so combat footwork can be layered onto the route instead of
+    // replacing it when the bot is under orders.
+    let pathX = 0;
+    let pathZ = 0;
 
     if (node) {
       const dist = v3distanceXZ(player.position, node.position);
@@ -638,6 +710,8 @@ export class BotController {
         v3normalize(_desired, _desired);
         wantX = _desired.x;
         wantZ = _desired.z;
+        pathX = _desired.x;
+        pathZ = _desired.z;
       }
     }
 
@@ -668,6 +742,17 @@ export class BotController {
 
         wantX = _desired.x * approach + strafeX * 0.85;
         wantZ = _desired.z * approach + strafeZ * 0.85;
+
+        // Under orders, footwork is layered onto the advance rather than
+        // replacing it. Combat movement is a dance around whoever you are
+        // shooting at, and a bot doing only that never crosses the room — which
+        // is fine in deathmatch, where the fight *is* the objective, and useless
+        // in a mission, where the fight is in the way of one. Keep enough of the
+        // strafe to be hard to hit and enough of the route to arrive.
+        if (brain.orderPosition && pathX !== 0) {
+          wantX = pathX * 0.65 + strafeX * 0.5;
+          wantZ = pathZ * 0.65 + strafeZ * 0.5;
+        }
       }
     }
 
@@ -693,17 +778,43 @@ export class BotController {
       input.buttons |= InputFlag.Crouch;
     }
 
-    // Bots vault and mantle by holding jump into an obstruction; the movement
-    // controller decides whether it is actually possible.
-    if (
-      player.moveState !== MoveState.Mantle &&
-      player.onGround &&
-      Math.abs(input.moveForward) > 0.5 &&
-      Math.hypot(player.velocity.x, player.velocity.z) < 0.6 &&
-      brain.goalTime > 0.4
-    ) {
-      // Stuck against something while trying to move: try to get over it.
-      input.buttons |= InputFlag.Jump;
+    // --- getting unstuck --------------------------------------------------
+    //
+    // Three escalating responses, because the three things that trap a bot are
+    // different problems. Something low in front of it: jump, and let the
+    // movement controller decide whether a mantle is possible. Something beside
+    // it, which is the case jumping never solves: shove sideways for half a
+    // second, which is what a person does without thinking. And a route that is
+    // simply wrong: throw the path away and ask for another.
+    //
+    // Without the middle one a bot wedged in the corner of two containers walks
+    // into them forever. It looks alive the whole time — it is pressing the
+    // stick — so nothing about it reads as broken except that it never arrives.
+    const wantsToMove = Math.abs(input.moveForward) > 0.5 || Math.abs(input.moveRight) > 0.5;
+    const moving = Math.hypot(player.velocity.x, player.velocity.z) >= 0.6;
+
+    if (wantsToMove && !moving && player.onGround && player.moveState !== MoveState.Mantle) {
+      brain.stuckTime += dt;
+      if (brain.stuckTime > 0.25) input.buttons |= InputFlag.Jump;
+      // ...unless the obstruction is a teammate, in which case this is a queue
+      // and not a wedge. Shoving sideways out of a crowd at a spawn point just
+      // pushes two bots through each other.
+      if (brain.stuckTime > 1.4 && brain.unstickTimer <= 0 && !this.crowded(player, wantX, wantZ)) {
+        brain.unstickTimer = 0.5;
+        brain.unstickDir = -brain.unstickDir;
+      }
+      if (brain.stuckTime > 2.0) {
+        // Whatever this route was, it is not working.
+        brain.pathAge = 99;
+        brain.stuckTime = 0;
+      }
+    } else if (moving) {
+      brain.stuckTime = 0;
+    }
+
+    if (brain.unstickTimer > 0) {
+      brain.unstickTimer -= dt;
+      input.moveRight = clamp(input.moveRight + brain.unstickDir, -1, 1);
     }
   }
 
@@ -739,6 +850,28 @@ export class BotController {
   }
 
   private chooseDestination(player: PlayerState, brain: BotBrain, weapon: WeaponDef): number {
+    // Orders outrank the goal machine, with one exception.
+    //
+    // A bot spends four fifths of a busy match in Engage, whose destination is
+    // "wherever the person I am shooting at is". If an order only applied while
+    // the bot had nothing to do, an ordered bot would never actually go
+    // anywhere — which is exactly what a squad under fire does not do. Told to
+    // take the east tower, you fight *toward* the east tower.
+    //
+    // Taking cover is the exception because it is a one-second reflex about
+    // staying alive, and a bot that walks into open ground mid-order because
+    // orders outrank self-preservation reads as broken rather than as brave.
+    if (brain.orderPosition && brain.goal !== BotGoal.TakeCover) {
+      const node = this.nav.nearestNode(brain.orderPosition, 24);
+      if (node >= 0) {
+        if (!this.travelGoalStands(player, brain) || brain.travelGoal !== node) {
+          brain.travelGoal = node;
+          brain.travelAge = 0;
+        }
+        return node;
+      }
+    }
+
     switch (brain.goal) {
       case BotGoal.TakeCover: {
         const threat = brain.targetId
@@ -813,6 +946,32 @@ export class BotController {
   }
 
   /**
+   * Is a friendly actually the thing in the way?
+   *
+   * Only if they are in front. A squadmate who follows you everywhere is within
+   * touching distance permanently, and treating that as "queueing" disables
+   * unsticking for the entire mission — which is worse than the shoving it was
+   * meant to prevent.
+   */
+  private crowded(player: PlayerState, wantX: number, wantZ: number): boolean {
+    const len = Math.hypot(wantX, wantZ);
+    if (len < 0.01) return false;
+    const dx = wantX / len;
+    const dz = wantZ / len;
+
+    for (const other of this.sim.world.players.values()) {
+      if (other.id === player.id || !other.alive) continue;
+      if (isEnemyTeam(other.team, player.team)) continue;
+      const ox = other.position.x - player.position.x;
+      const oz = other.position.z - player.position.z;
+      const d = Math.hypot(ox, oz);
+      if (d > 1.4 || d < 0.01) continue;
+      if ((ox / d) * dx + (oz / d) * dz > 0.5) return true;
+    }
+    return false;
+  }
+
+  /**
    * Does the bot's current journey still make sense?
    *
    * Only three things end one: arriving, the node going away underneath it, and
@@ -840,6 +999,27 @@ export class BotController {
    * their own spawn.
    */
   private roamDestination(player: PlayerState, brain: BotBrain): number {
+    // Orders first. A bot that has been told where to go goes there.
+    if (brain.orderPosition) {
+      const node = this.nav.nearestNode(brain.orderPosition, 24);
+      if (node >= 0) return node;
+    }
+
+    // A squadmate's idea of somewhere worth being is "near you". Checked before
+    // the objective, because an ally that peels off to capture a flag while you
+    // walk into an ambush alone is not a squadmate.
+    if (brain.leaderId !== 0) {
+      const leader = this.sim.world.players.get(brain.leaderId);
+      if (leader && leader.alive) {
+        // Only when actually adrift — otherwise the bot is forever walking the
+        // last two metres toward the player and never holds an angle.
+        if (v3distanceXZ(player.position, leader.position) > 11) {
+          const node = this.nav.nearestNode(leader.position, 20);
+          if (node >= 0) return node;
+        }
+      }
+    }
+
     const objective = this.pickObjective(player);
     if (objective) {
       const node = this.nav.nearestNode(objective, 25);

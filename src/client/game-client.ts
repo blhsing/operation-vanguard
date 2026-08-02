@@ -40,6 +40,11 @@ import { NavGraph } from '@shared/ai/navigation.js';
 import { BotController, DIFFICULTIES, type BotDifficulty } from '@shared/ai/bot.js';
 import { getMap } from '@shared/map/index.js';
 import {
+  CampaignDirector,
+  MissionPhase,
+  tryGetMission,
+} from '@shared/campaign/index.js';
+import {
   RoundPhase,
   ZombiesDirector,
   getZombiesMap,
@@ -61,6 +66,8 @@ export interface MatchConfig {
   playerName: string;
   loadout: Loadout;
   seed?: string;
+  /** Which campaign mission to play. Only read when modeId is 'campaign'. */
+  missionId?: string;
 }
 
 export interface ClientSettings {
@@ -90,6 +97,8 @@ export class GameClient {
 
   /** Present only in Zombies. Owns rounds, the horde and the economy. */
   readonly zombies: ZombiesDirector | null = null;
+  /** Present only in the Campaign. Owns the objective graph, the squad and the checkpoint. */
+  readonly campaign: CampaignDirector | null = null;
 
   localId: PlayerId = 0;
   state: ClientState = 'loading';
@@ -157,6 +166,17 @@ export class GameClient {
       );
     }
 
+    const mission = config.missionId ? tryGetMission(config.missionId) : undefined;
+    if (config.modeId === 'campaign' && mission) {
+      this.campaign = new CampaignDirector(
+        this.sim,
+        this.nav,
+        this.bots,
+        new Rng(hashSeed(`${config.seed ?? mission.id}:cmp`)),
+        mission,
+      );
+    }
+
     this.populate(config);
 
     window.addEventListener('resize', this.onResize);
@@ -171,6 +191,19 @@ export class GameClient {
     // by the director rather than added here.
     if (this.zombies) {
       this.populateZombies(config);
+      return;
+    }
+
+    // The campaign director owns the squad and the opposition; all it needs from
+    // here is the player.
+    if (this.campaign) {
+      const local = this.sim.addPlayer({
+        name: config.playerName,
+        team: Team.Allies,
+        loadout: config.loadout,
+      });
+      this.localId = local.id;
+      this.campaign.begin(local);
       return;
     }
 
@@ -314,6 +347,11 @@ export class GameClient {
         if (result.message) this.hud.showAnnounce(result.message.toUpperCase());
       }
       this.usePressed = this.zombies ? (cmd.buttons & InputFlag.Use) !== 0 : false;
+
+      // The campaign wants the key *held*, not tapped: setting a charge is a
+      // duration, so the director is told the state every tick rather than the
+      // edge Zombies wants for a purchase.
+      this.campaign?.setUsing(this.localId, (cmd.buttons & InputFlag.Use) !== 0);
     }
 
     // --- bots ---------------------------------------------------------------
@@ -329,6 +367,10 @@ export class GameClient {
       for (const e of zombieEvents) events.push(e);
     }
 
+    if (this.campaign) {
+      for (const e of this.campaign.step(TICK_DT, events)) events.push(e);
+    }
+
     this.consumeEvents(events);
 
     // --- track motion for bob and footsteps ---------------------------------
@@ -337,6 +379,17 @@ export class GameClient {
       this.lastPosition.x = local.position.x;
       this.lastPosition.y = local.position.y;
       this.lastPosition.z = local.position.z;
+    }
+
+    if (
+      this.campaign &&
+      this.campaign.state.phase === MissionPhase.Complete &&
+      this.state === 'playing'
+    ) {
+      this.state = 'match_end';
+      this.input.releaseLock();
+      this.onMatchEnd?.(null);
+      return;
     }
 
     if (this.zombies && this.zombies.state.phase === RoundPhase.GameOver && this.state === 'playing') {
@@ -522,6 +575,23 @@ export class GameClient {
 
     // The minimap only reveals enemies when the team has earned it.
     if (local) this.hud.setUav(this.sim.radarTime(local.team));
+
+    // The campaign replaces the score bar with the objective board.
+    if (this.campaign) {
+      const objectives = this.campaign.activeObjectives();
+      const interact = this.campaign.mission.objectives.find(
+        (o) =>
+          o.trigger.kind === 'interact' &&
+          this.campaign!.state.objectives.get(o.id)?.active === true,
+      );
+      const verb =
+        interact && interact.trigger.kind === 'interact' ? interact.trigger.verb : null;
+      this.hud.setCampaignState({
+        objectives: objectives.map((o) => ({ label: o.label, progress: o.progress })),
+        prompt: verb ? `HOLD F — ${verb}` : null,
+        failed: this.campaign.state.phase === MissionPhase.Failed,
+      });
+    }
 
     // Zombies replaces the score bar with round, points and the buy prompt.
     if (this.zombies && local) {

@@ -367,6 +367,38 @@ const ZOMBIES: GameModeDef = {
   introLine: 'Survive.',
 };
 
+/**
+ * The Campaign.
+ *
+ * Not really a "mode" so much as a shell the mission director runs inside: no
+ * clock, no score, no respawns of its own — a mission ends when its objectives
+ * do, and a death rewinds to a checkpoint rather than putting you back in the
+ * queue. What this entry actually supplies is the absence of everything the
+ * competitive modes assume.
+ */
+const CAMPAIGN_MODE: GameModeDef = {
+  id: 'campaign',
+  name: 'Campaign',
+  shortName: 'CMP',
+  description: 'Six missions. One of them is on a roof you have already fought over.',
+  teamBased: true,
+  scoreLimit: 0,
+  timeLimit: 0,
+  roundsToWin: 0,
+  roundTime: 0,
+  // The director owns dying: it restores a checkpoint rather than respawning.
+  respawn: false,
+  respawnDelay: 0,
+  objectiveKind: null,
+  scoring: scoring({ kill: 50, assist: 25 }),
+  params: {},
+  killstreaksEnabled: false,
+  scorestreaksOnly: false,
+  teamScoresOnKill: false,
+  teamSize: [1, 1],
+  introLine: 'Mission start.',
+};
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -381,6 +413,7 @@ const ALL_MODES: GameModeDef[] = [
   HEADQUARTERS,
   GUN_GAME,
   ZOMBIES,
+  CAMPAIGN_MODE,
 ];
 
 export const GAME_MODES: Record<string, GameModeDef> = Object.fromEntries(
@@ -390,9 +423,9 @@ export const GAME_MODES: Record<string, GameModeDef> = Object.fromEntries(
 export const MODE_IDS: string[] = ALL_MODES.map((m) => m.id);
 
 /** Modes offered in the standard multiplayer playlist (excludes Zombies). */
-export const MULTIPLAYER_MODE_IDS: string[] = ALL_MODES.filter((m) => m.id !== 'zombies').map(
-  (m) => m.id,
-);
+export const MULTIPLAYER_MODE_IDS: string[] = ALL_MODES.filter(
+  (m) => m.id !== 'zombies' && m.id !== 'campaign',
+).map((m) => m.id);
 
 /**
  * Everything a player can actually pick, Zombies included.

@@ -13,6 +13,7 @@
  */
 
 import { MAX_RANK } from '@shared/constants.js';
+import { MISSION_IDS } from '@shared/campaign/index.js';
 import { DEFAULT_MAP } from '@shared/map/index.js';
 import { DEFAULT_MODE } from '@shared/data/modes.js';
 import { defaultLoadout, type Loadout } from '@shared/sim/loadout.js';
@@ -51,6 +52,8 @@ export interface Profile {
     modeId: string;
     botCount: number;
     difficulty: string;
+    /** Which campaign mission was last selected. */
+    missionId: string;
   };
   /**
    * Settings are stored COMPLETE, not as partials.
@@ -95,6 +98,7 @@ export function createProfile(): Profile {
       modeId: DEFAULT_MODE,
       botCount: 9,
       difficulty: 'regular',
+      missionId: MISSION_IDS[0] ?? 'cold_open',
     },
     settings: {
       input: { ...DEFAULT_INPUT_SETTINGS, bindings: { ...DEFAULT_INPUT_SETTINGS.bindings } },
@@ -212,6 +216,7 @@ export function loadProfile(): Profile {
       modeId: str(lastMatch.modeId, fallback.lastMatch.modeId, 40),
       botCount: num(lastMatch.botCount, 9, 0, 23),
       difficulty: str(lastMatch.difficulty, 'regular', 20),
+      missionId: str(lastMatch.missionId, fallback.lastMatch.missionId, 40),
     },
     settings: {
       // Merge over defaults so a profile written by an older build — which will

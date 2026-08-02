@@ -1245,3 +1245,48 @@ canvas#game {
 .hud[data-mode='zombies'] .hud-compass {
   opacity: 0.5;
 }
+
+/* --- campaign ----------------------------------------------------------- */
+/* The objective board. Stands where the score bar would be; the two never
+   appear together because a mission has no score and a match has no orders. */
+.hud-campaign {
+  position: absolute;
+  top: calc(18px * var(--hud-scale));
+  left: calc(24px * var(--hud-scale));
+  display: none;
+  min-width: calc(220px * var(--hud-scale));
+  font-size: calc(13px * var(--hud-scale));
+  letter-spacing: 0.06em;
+}
+.hud-campaign.is-visible { display: block; }
+.hud[data-mode='campaign'] .hud-top { display: none; }
+
+.hud-cmp-obj {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--hud-scale));
+  margin-bottom: calc(5px * var(--hud-scale));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.hud-cmp-obj::before {
+  content: '';
+  width: calc(7px * var(--hud-scale));
+  height: calc(7px * var(--hud-scale));
+  background: var(--accent, #ff8a2b);
+  transform: rotate(45deg);
+  flex: none;
+}
+.hud-cmp-label { color: #eee; text-transform: uppercase; }
+.hud-cmp-bar {
+  flex: 1;
+  height: calc(3px * var(--hud-scale));
+  background: rgba(255, 255, 255, 0.18);
+  min-width: calc(48px * var(--hud-scale));
+}
+.hud-cmp-bar i { display: block; height: 100%; background: var(--accent, #ff8a2b); }
+.hud-cmp-prompt {
+  margin-top: calc(8px * var(--hud-scale));
+  color: var(--accent, #ff8a2b);
+  font-weight: 600;
+}
+.hud-campaign[data-failed='true'] .hud-cmp-label { color: #ff5a4a; }

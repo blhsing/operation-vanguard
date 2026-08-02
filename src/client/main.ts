@@ -14,6 +14,7 @@
 import './styles.css';
 
 import { MAP_IDS, getMap } from '@shared/map/index.js';
+import { MISSION_IDS, getMission } from '@shared/campaign/index.js';
 import { PLAYABLE_MODE_IDS, ZOMBIES_MODE_ID, getMode } from '@shared/data/modes.js';
 import { hasZombiesLayout } from '@shared/zombies/index.js';
 import { Team } from '@shared/types.js';
@@ -281,19 +282,42 @@ function buildPlayScreen(): void {
 
   const p = panel('Match setup');
 
-  p.appendChild(
-    selectField(
-      'Map',
-      profile.lastMatch.mapId,
-      MAP_IDS.map((id) => ({ value: id, label: getMap(id).name })),
-      (v) => {
-        profile.lastMatch.mapId = v;
-        saveProfile(profile);
-        buildPlayScreen();
-        showScreen('play');
-      },
-    ),
-  );
+  const isCampaign = profile.lastMatch.modeId === 'campaign';
+
+  // A mission brings its own map, so the campaign picks one instead of the other.
+  if (isCampaign) {
+    p.appendChild(
+      selectField(
+        'Mission',
+        profile.lastMatch.missionId,
+        MISSION_IDS.map((id, i) => ({
+          value: id,
+          label: `${String(i + 1).padStart(2, '0')} · ${getMission(id).name}`,
+        })),
+        (v) => {
+          profile.lastMatch.missionId = v;
+          profile.lastMatch.mapId = getMission(v).mapId;
+          saveProfile(profile);
+          buildPlayScreen();
+          showScreen('play');
+        },
+      ),
+    );
+  } else {
+    p.appendChild(
+      selectField(
+        'Map',
+        profile.lastMatch.mapId,
+        MAP_IDS.map((id) => ({ value: id, label: getMap(id).name })),
+        (v) => {
+          profile.lastMatch.mapId = v;
+          saveProfile(profile);
+          buildPlayScreen();
+          showScreen('play');
+        },
+      ),
+    );
+  }
 
   // Zombies only appears for maps that actually have a layout authored for it.
   const availableModes = PLAYABLE_MODE_IDS.filter(
@@ -318,7 +342,7 @@ function buildPlayScreen(): void {
     ),
   );
 
-  p.appendChild(
+  if (!isCampaign) p.appendChild(
     sliderField(
       profile.lastMatch.modeId === ZOMBIES_MODE_ID ? 'Co-op partners' : 'Bots',
       profile.lastMatch.botCount,
@@ -636,6 +660,13 @@ function startMatch(): void {
     playerName: profile.name,
     loadout: profile.loadouts[profile.activeLoadout] ?? defaultLoadout(),
   };
+
+  // A mission dictates its own map; the stored one is only a cache of it.
+  if (config.modeId === 'campaign') {
+    const mission = getMission(profile.lastMatch.missionId);
+    config.missionId = mission.id;
+    config.mapId = mission.mapId;
+  }
 
   showScreen(null);
   setBootProgress(0.4, 'Building map…');

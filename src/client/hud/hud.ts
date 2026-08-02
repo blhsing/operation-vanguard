@@ -94,6 +94,21 @@ export const DEFAULT_HUD_OPTIONS: HudOptions = {
   crosshairColor: '#e8f4ff',
 };
 
+/**
+ * The campaign objective board.
+ *
+ * Radio traffic is not in here: mission lines are ordinary Announce events and
+ * the HUD already knows how to show one of those. This is only the standing
+ * list of what you are supposed to be doing, which is the part that has to be
+ * on screen continuously rather than for three seconds.
+ */
+export interface CampaignHudState {
+  objectives: Array<{ label: string; progress: number }>;
+  /** What the use key would do here, if anything. */
+  prompt: string | null;
+  failed: boolean;
+}
+
 /** Everything the Zombies HUD shows. Supplied by the director each frame. */
 export interface ZombiesHudState {
   round: number;
@@ -143,6 +158,7 @@ export class Hud {
   };
 
   private readonly minimap: Minimap;
+  private readonly campaignEls: { root: HTMLElement; objectives: HTMLElement };
   private readonly zombiesEls: {
     root: HTMLElement;
     round: HTMLElement;
@@ -167,6 +183,7 @@ export class Hud {
 
   private scoreboardVisible = false;
   private zombiesState: ZombiesHudState | null = null;
+  private campaignState: CampaignHudState | null = null;
   /** Smoothed so the points counter ticks up rather than jumping. */
   private displayedPoints = 0;
 
@@ -213,6 +230,11 @@ export class Hud {
       respawn: q('.hud-respawn'),
       fps: q('.hud-fps'),
       lowHealth: q('.hud-lowhealth'),
+    };
+
+    this.campaignEls = {
+      root: q('.hud-campaign'),
+      objectives: q('.hud-cmp-objectives'),
     };
 
     this.zombiesEls = {
@@ -417,6 +439,7 @@ export class Hud {
     }
 
     this.renderZombies(dt);
+    this.renderCampaign();
 
     if (this.scoreboardVisible) {
       this.renderScoreboard(world, localId);
@@ -435,6 +458,41 @@ export class Hud {
     // Flag it on the root so CSS can hide the multiplayer score bar. A sibling
     // selector cannot reach it: `.hud-top` appears earlier in the template.
     this.root.dataset.mode = 'zombies';
+  }
+
+  /**
+   * Hand the HUD this frame's objective board.
+   *
+   * Same contract as the Zombies one: the director owns the state, the HUD only
+   * draws it, and the root gets a mode flag so the CSS can stand the campaign
+   * board and the multiplayer score bar down for each other.
+   */
+  setCampaignState(state: CampaignHudState): void {
+    this.campaignState = state;
+    this.root.dataset.mode = 'campaign';
+  }
+
+  private renderCampaign(): void {
+    const c = this.campaignState;
+    if (!c) {
+      this.campaignEls.root.classList.remove('is-visible');
+      return;
+    }
+    this.campaignEls.root.classList.add('is-visible');
+    this.campaignEls.root.dataset.failed = c.failed ? 'true' : 'false';
+
+    const rows = c.objectives
+      .map(
+        (o) =>
+          `<div class="hud-cmp-obj"><span class="hud-cmp-label">${escapeHtml(o.label)}</span>` +
+          (o.progress > 0
+            ? `<span class="hud-cmp-bar"><i style="width:${Math.round(o.progress * 100)}%"></i></span>`
+            : '') +
+          `</div>`,
+      )
+      .join('');
+    const prompt = c.prompt ? `<div class="hud-cmp-prompt">${escapeHtml(c.prompt)}</div>` : '';
+    this.campaignEls.objectives.innerHTML = rows + prompt;
   }
 
   private renderZombies(dt: number): void {
@@ -875,6 +933,9 @@ const HUD_TEMPLATE = `
   <div class="hud-streaks"></div>
 </div>
 
+<div class="hud-campaign">
+  <div class="hud-cmp-objectives"></div>
+</div>
 <div class="hud-zombies">
   <div class="hud-zm-top">
     <div class="hud-zm-block"><span class="hud-zm-label">ROUND</span><span class="hud-zm-round">—</span></div>
