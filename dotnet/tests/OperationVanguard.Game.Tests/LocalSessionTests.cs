@@ -45,6 +45,28 @@ public sealed class LocalSessionTests
         Assert.True(session.Player.Alive);
     }
 
+    [Fact]
+    public void EnemyBotsUseReducedAggressionWithoutWeakeningFriendlyBots()
+    {
+        var session = new LocalSession(
+            "shipment_yard",
+            "tdm",
+            2,
+            DifficultyId.Regular,
+            "Alice",
+            LoadoutSystem.DefaultLoadout("Test"));
+        var bots = session.World.Players.Values.Where(player => player.IsBot).ToArray();
+        var enemy = Assert.Single(bots, player => player.Team == Team.Axis);
+        var friendly = Assert.Single(bots, player => player.Team == Team.Allies);
+
+        Assert.Equal(
+            BotData.EnemyAggressionScale,
+            Assert.IsType<BotBrain>(session.Bots.GetBrain(enemy.Id)).AggressionScale);
+        Assert.Equal(
+            1d,
+            Assert.IsType<BotBrain>(session.Bots.GetBrain(friendly.Id)).AggressionScale);
+    }
+
     private static InputCommand Command(InputFlag buttons, int tick) => new()
     {
         Tick = tick,

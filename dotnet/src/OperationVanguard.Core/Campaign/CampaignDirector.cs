@@ -868,7 +868,12 @@ public sealed class CampaignDirector
             new Vec3(x, double.IsFinite(groundY) ? groundY + 0.05d : wave.Spawn.Y, z),
             0d);
 
-        _bots.Register(bot.Id, archetype, difficulty, BotData.EnemyMovementScale);
+        _bots.Register(
+            bot.Id,
+            archetype,
+            difficulty,
+            BotData.EnemyMovementScale,
+            BotData.EnemyAggressionScale);
         _simulation.SetOutgoingDamageScale(bot.Id, BotData.EnemyDamageScale);
         _bots.OrderTo(bot.Id, wave.Post ?? wave.Spawn);
         _hostiles.Add(bot.Id);

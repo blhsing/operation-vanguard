@@ -41,6 +41,7 @@ import { NavGraph } from '@shared/ai/navigation.js';
 import {
   BotController,
   DIFFICULTIES,
+  ENEMY_AGGRESSION_SCALE,
   ENEMY_DAMAGE_SCALE,
   ENEMY_MOVEMENT_SCALE,
   type BotDifficulty,
@@ -257,7 +258,13 @@ export class GameClient {
         loadout: botLoadout(archetype, i),
       });
       const enemy = isEnemyTeam(local.team, team);
-      this.bots.register(bot.id, archetype, difficulty, enemy ? ENEMY_MOVEMENT_SCALE : 1);
+      this.bots.register(
+        bot.id,
+        archetype,
+        difficulty,
+        enemy ? ENEMY_MOVEMENT_SCALE : 1,
+        enemy ? ENEMY_AGGRESSION_SCALE : 1,
+      );
       if (enemy) this.sim.setOutgoingDamageScale(bot.id, ENEMY_DAMAGE_SCALE);
     }
   }

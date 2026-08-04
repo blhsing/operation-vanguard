@@ -82,7 +82,8 @@ public sealed class LocalSession
             });
             var enemy = SimulationTypes.IsEnemyTeam(Player.Team, team);
             Bots.Register(bot.Id, archetype, botDifficulty,
-                enemy ? BotData.EnemyMovementScale : 1d);
+                enemy ? BotData.EnemyMovementScale : 1d,
+                enemy ? BotData.EnemyAggressionScale : 1d);
             if (enemy)
                 Simulation.SetOutgoingDamageScale(bot.Id, BotData.EnemyDamageScale);
         }

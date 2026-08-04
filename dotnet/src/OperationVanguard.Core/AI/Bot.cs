@@ -25,6 +25,7 @@ public static class BotData
 {
     public const double EnemyMovementScale = 0.78d;
     public const double EnemyDamageScale = 0.72d;
+    public const double EnemyAggressionScale = 0.52d;
 
     public static IReadOnlyList<string> DifficultyIds { get; } =
         Array.AsReadOnly(["recruit", "regular", "hardened", "veteran"]);
@@ -125,13 +126,15 @@ public static class BotData
         BotArchetype archetype,
         BotDifficulty difficulty,
         Rng rng,
-        double movementScale = 1d) =>
+        double movementScale = 1d,
+        double aggressionScale = 1d) =>
         new()
         {
             PlayerId = playerId,
             Archetype = archetype,
             Difficulty = difficulty,
             MovementScale = movementScale,
+            AggressionScale = aggressionScale,
             Goal = BotGoal.Advance,
             GoalTime = 0d,
             TargetId = SimulationTypes.NullEntity,
@@ -186,6 +189,7 @@ public sealed class BotBrain
     public BotArchetype Archetype { get; set; }
     public BotDifficulty Difficulty { get; set; } = new();
     public double MovementScale { get; set; } = 1d;
+    public double AggressionScale { get; set; } = 1d;
 
     public BotGoal Goal { get; set; }
     public double GoalTime { get; set; }
@@ -270,9 +274,16 @@ public sealed class BotController
         int playerId,
         BotArchetype archetype,
         BotDifficulty difficulty,
-        double movementScale = 1d)
+        double movementScale = 1d,
+        double aggressionScale = 1d)
     {
-        var brain = BotData.CreateBrain(playerId, archetype, difficulty, _rng, movementScale);
+        var brain = BotData.CreateBrain(
+            playerId,
+            archetype,
+            difficulty,
+            _rng,
+            movementScale,
+            aggressionScale);
         if (_brains.ContainsKey(playerId))
         {
             // Map.set on an existing key replaces the value without moving its slot.
@@ -441,7 +452,9 @@ public sealed class BotController
             {
                 brain.TargetId = bestId;
                 brain.Reacted = false;
-                brain.ReactionTimer = difficulty.ReactionTime * _rng.Range(0.75d, 1.3d);
+                brain.ReactionTimer =
+                    difficulty.ReactionTime / Math.Max(0.35d, brain.AggressionScale) *
+                    _rng.Range(0.75d, 1.3d);
                 brain.VisibleTime = 0d;
                 ResampleBias(brain);
             }
@@ -467,7 +480,7 @@ public sealed class BotController
         {
             brain.LostTime += deltaTime;
             brain.VisibleTime = 0d;
-            if (brain.LostTime > 4d * difficulty.Persistence)
+            if (brain.LostTime > 4d * difficulty.Persistence * brain.AggressionScale)
             {
                 brain.TargetId = SimulationTypes.NullEntity;
                 brain.Reacted = false;
@@ -513,15 +526,20 @@ public sealed class BotController
         {
             // Keep condition order: low-health bots consume the chance roll before
             // the goal-time gate, exactly as the JavaScript && expression does.
+            var defensiveHealth = 0.4d + (1d - brain.AggressionScale) * 0.3d;
+            var coverInstinct =
+                difficulty.CoverInstinct + (1d - brain.AggressionScale) * 0.75d;
             var wantsCover =
-                healthFraction < 0.4d &&
-                Chance(brain, difficulty.CoverInstinct) &&
+                healthFraction < defensiveHealth &&
+                Chance(brain, coverInstinct) &&
                 brain.GoalTime > 0.8d;
             brain.Goal = wantsCover ? BotGoal.TakeCover : BotGoal.Engage;
         }
         else if (hasTarget)
         {
-            brain.Goal = BotGoal.Hunt;
+            brain.Goal = brain.AggressionScale < 0.75d
+                ? BotGoal.TakeCover
+                : BotGoal.Hunt;
         }
         else if (lowAmmo && player.Action != WeaponAction.Reloading)
         {
@@ -1177,7 +1195,7 @@ public sealed class BotController
             PullTrigger(brain, weapon, input);
         }
 
-        if (distance < 2d && _rng.Chance(0.04d))
+        if (distance < 2d && _rng.Chance(0.04d * brain.AggressionScale))
         {
             input.Buttons |= (int)InputFlag.Melee;
         }
@@ -1186,7 +1204,7 @@ public sealed class BotController
             player.LethalCount > 0 &&
             distance > 8d &&
             distance < 30d &&
-            Chance(brain, brain.Difficulty.GrenadeInstinct))
+            Chance(brain, brain.Difficulty.GrenadeInstinct * brain.AggressionScale))
         {
             input.Buttons |= (int)InputFlag.Lethal;
             brain.GrenadeCooldown = _rng.Range(8d, 20d);
@@ -1199,7 +1217,22 @@ public sealed class BotController
     {
         if (weapon.FireMode == FireMode.Auto)
         {
+            if (brain.AggressionScale >= 0.999d)
+            {
+                input.Buttons |= (int)InputFlag.Fire;
+                return;
+            }
+
+            if (brain.TriggerCooldown > 0d)
+            {
+                return;
+            }
+
             input.Buttons |= (int)InputFlag.Fire;
+            brain.TriggerCooldown =
+                WeaponMath.FireInterval(weapon) +
+                (1d - brain.AggressionScale) * 0.16d +
+                GameConstants.TickDt;
             return;
         }
 

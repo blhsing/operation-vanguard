@@ -31,6 +31,7 @@ import type { NavGraph } from '../ai/navigation.js';
 import {
   BotController,
   DIFFICULTIES,
+  ENEMY_AGGRESSION_SCALE,
   ENEMY_DAMAGE_SCALE,
   ENEMY_MOVEMENT_SCALE,
 } from '../ai/bot.js';
@@ -625,7 +626,13 @@ export class CampaignDirector {
     const groundY = this.sim.collision.groundHeightAt(x, z, wave.spawn.y + 2, 8);
     this.placeAt(bot, vec3(x, Number.isFinite(groundY) ? groundY + 0.05 : wave.spawn.y, z), 0);
 
-    this.bots.register(bot.id, archetype, difficulty, ENEMY_MOVEMENT_SCALE);
+    this.bots.register(
+      bot.id,
+      archetype,
+      difficulty,
+      ENEMY_MOVEMENT_SCALE,
+      ENEMY_AGGRESSION_SCALE,
+    );
     this.sim.setOutgoingDamageScale(bot.id, ENEMY_DAMAGE_SCALE);
     // Hold the ground you were put on. Without a post a hostile roams, and
     // roaming rewards distance — so it leaves the position it was spawned to

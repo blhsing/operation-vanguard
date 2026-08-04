@@ -153,6 +153,8 @@ export type DifficultyId = (typeof DIFFICULTY_IDS)[number];
 /** Native and web presentation balance for bots opposing the local player. */
 export const ENEMY_MOVEMENT_SCALE = 0.78;
 export const ENEMY_DAMAGE_SCALE = 0.72;
+/** Enemy-only pressure scale; allies retain full responsiveness and covering fire. */
+export const ENEMY_AGGRESSION_SCALE = 0.52;
 
 export function difficultyFromSkill(skill: number): BotDifficulty {
   const idx = clamp(Math.floor(skill * DIFFICULTY_IDS.length), 0, DIFFICULTY_IDS.length - 1);
@@ -184,6 +186,8 @@ export interface BotBrain {
   difficulty: BotDifficulty;
   /** Analog movement scale; friendly squad bots retain the default of one. */
   movementScale: number;
+  /** Scales target commitment, pursuit, firing cadence, grenades, and melee. */
+  aggressionScale: number;
 
   goal: BotGoal;
   /** Seconds spent in the current goal, so behaviours can't thrash. */
@@ -286,12 +290,14 @@ export function createBrain(
   difficulty: BotDifficulty,
   rng: Rng,
   movementScale = 1,
+  aggressionScale = 1,
 ): BotBrain {
   return {
     playerId,
     archetype,
     difficulty,
     movementScale,
+    aggressionScale,
     goal: BotGoal.Advance,
     goalTime: 0,
     targetId: 0,
@@ -370,8 +376,12 @@ export class BotController {
     archetype: BotArchetype,
     difficulty: BotDifficulty,
     movementScale = 1,
+    aggressionScale = 1,
   ): void {
-    this.brains.set(playerId, createBrain(playerId, archetype, difficulty, this.rng, movementScale));
+    this.brains.set(
+      playerId,
+      createBrain(playerId, archetype, difficulty, this.rng, movementScale, aggressionScale),
+    );
   }
 
   /**
@@ -519,7 +529,8 @@ export class BotController {
         // switching targets costs the bot the same beat it costs a human.
         brain.targetId = bestId;
         brain.reacted = false;
-        brain.reactionTimer = d.reactionTime * this.rng.range(0.75, 1.3);
+        brain.reactionTimer =
+          (d.reactionTime / Math.max(0.35, brain.aggressionScale)) * this.rng.range(0.75, 1.3);
         brain.visibleTime = 0;
         this.resampleBias(brain);
       }
@@ -542,7 +553,7 @@ export class BotController {
       brain.visibleTime = 0;
       // Keep the target for a while so the bot pushes the last known position
       // instead of instantly forgetting.
-      if (brain.lostTime > 4 * brain.difficulty.persistence) {
+      if (brain.lostTime > 4 * brain.difficulty.persistence * brain.aggressionScale) {
         brain.targetId = 0;
         brain.reacted = false;
       }
@@ -590,11 +601,13 @@ export class BotController {
       brain.goal = hasTarget && brain.visibleTime > 0 ? BotGoal.TakeCover : BotGoal.Regroup;
     } else if (hasTarget && brain.lostTime < 0.35) {
       // Hurt bots break contact rather than trading to the death.
+      const defensiveHealth = 0.4 + (1 - brain.aggressionScale) * 0.3;
+      const coverInstinct = d.coverInstinct + (1 - brain.aggressionScale) * 0.75;
       const wantsCover =
-        healthFrac < 0.4 && this.chance(brain, d.coverInstinct) && brain.goalTime > 0.8;
+        healthFrac < defensiveHealth && this.chance(brain, coverInstinct) && brain.goalTime > 0.8;
       brain.goal = wantsCover ? BotGoal.TakeCover : BotGoal.Engage;
     } else if (hasTarget) {
-      brain.goal = BotGoal.Hunt;
+      brain.goal = brain.aggressionScale < 0.75 ? BotGoal.TakeCover : BotGoal.Hunt;
     } else if (lowAmmo && player.action !== WeaponAction.Reloading) {
       brain.goal = BotGoal.Regroup;
     } else if (
@@ -1213,7 +1226,7 @@ export class BotController {
     if (wantsFire) this.pullTrigger(brain, weapon, input);
 
     // Melee when practically touching.
-    if (dist < 2.0 && this.rng.chance(0.04)) {
+    if (dist < 2.0 && this.rng.chance(0.04 * brain.aggressionScale)) {
       input.buttons |= InputFlag.Melee;
     }
 
@@ -1223,7 +1236,7 @@ export class BotController {
       player.lethalCount > 0 &&
       dist > 8 &&
       dist < 30 &&
-      this.chance(brain, brain.difficulty.grenadeInstinct)
+      this.chance(brain, brain.difficulty.grenadeInstinct * brain.aggressionScale)
     ) {
       input.buttons |= InputFlag.Lethal;
       brain.grenadeCooldown = this.rng.range(8, 20);
@@ -1242,7 +1255,14 @@ export class BotController {
    */
   private pullTrigger(brain: BotBrain, weapon: WeaponDef, input: InputCommand): void {
     if (weapon.fireMode === FireMode.Auto) {
+      if (brain.aggressionScale >= 0.999) {
+        input.buttons |= InputFlag.Fire;
+        return;
+      }
+      if (brain.triggerCooldown > 0) return;
       input.buttons |= InputFlag.Fire;
+      brain.triggerCooldown =
+        fireInterval(weapon) + (1 - brain.aggressionScale) * 0.16 + TICK_DT;
       return;
     }
 
