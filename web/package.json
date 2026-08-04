@@ -1,0 +1,46 @@
+{
+  "name": "operation-vanguard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Operation Vanguard — a browser-native Call of Duty-style multiplayer FPS.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:server": "tsx watch src/server/main.ts",
+    "dev:all": "concurrently -k -n client,server -c cyan,magenta \"npm:dev\" \"npm:dev:server\"",
+    "build": "tsc --noEmit && vite build",
+    "build:standalone": "tsc --noEmit && tsx tools/standalone.ts",
+    "verify:standalone": "tsx tools/verify-standalone.ts",
+    "check:i18n": "tsx tools/check-i18n.ts",
+    "verify:server": "tsx tools/verify-server.ts",
+    "export:dotnet-parity": "tsx tools/export-dotnet-parity.ts",
+    "export:dotnet-sources": "tsx tools/export-dotnet-data-sources.ts",
+    "export:dotnet": "npm run export:dotnet-parity && npm run export:dotnet-sources",
+    "export:textures": "tsx tools/texture-export-server.ts",
+    "preview": "vite preview",
+    "server": "tsx src/server/main.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "three": "^0.180.0",
+    "three-mesh-bvh": "^0.9.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/three": "^0.180.0",
+    "@types/ws": "^8.5.13",
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.8"
+  }
+}

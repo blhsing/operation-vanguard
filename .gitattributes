@@ -16,4 +16,4 @@
 # here, where it is preserved and shows up as spurious drift. The build now
 # normalises line endings itself and refuses to emit a carriage return, which is
 # the guard that actually holds — not this line.
-offline/** -text
+web/offline/** -text

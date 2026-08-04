@@ -1,6 +1,8 @@
 node_modules/
 dist/
 dist-server/
+bin/
+obj/
 .vite/
 *.local
 *.log
@@ -8,15 +10,20 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .idea/
+.vs/
 .vscode/*
 !.vscode/extensions.json
+TestResults/
+artifacts/
+*.user
+*.suo
 coverage/
 .env
 .env.*
 !.env.example
 stats.html
 
-# Verification scratch. The offline/ build is deliberately NOT ignored: it is a
+# Verification scratch. The web/offline/ build is deliberately NOT ignored: it is a
 # committed artefact so that a clone can be played without a toolchain, and CI
 # fails if it drifts from what the source produces.
 .verify/

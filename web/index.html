@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0c0f" />
+    <meta
+      name="description"
+      content="先鋒行動 — 在瀏覽器中直接執行的決勝時刻風格第一人稱射擊遊戲。免下載、免外掛。"
+    />
+    <title>先鋒行動</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="%BASE_URL%favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="%BASE_URL%operation-vanguard-logo-192.png" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Boot screen. Replaced by the client once the engine is ready. -->
+      <div id="boot">
+        <div class="boot-mark">
+          <img class="boot-logo" src="%BASE_URL%operation-vanguard-logo-192.png" alt="" />
+          <span class="boot-op">行動代號</span>
+          <span class="boot-title">先鋒</span>
+        </div>
+        <div class="boot-bar"><div class="boot-bar-fill" id="boot-progress"></div></div>
+        <div class="boot-status" id="boot-status">引擎初始化中&hellip;</div>
+        <!-- SOURCE-ONLY:start -->
+        <script>
+          /*
+           * Opened straight off the disk? Say so, rather than spinning forever.
+           *
+           * This file is the *source* entry: it points at TypeScript that only a
+           * dev server can transform, so from a file:// origin the module script
+           * is blocked by CORS and the boot screen below sits at "初始化中" for
+           * ever with one line in a console nobody has open. It is also the most
+           * obvious file in the repository to double-click.
+           *
+           * The playable offline copy is committed at offline/index.html. The
+           * guard keys off the module script, which the offline build strips —
+           * so this never fires there, and never fires over http either.
+           *
+           * It waits for DOMContentLoaded, and that is not incidental. The first
+           * version of this ran inline and asked for the module script the
+           * moment it executed. The module script is the last line of <body>, so
+           * the parser had not reached it yet and the query returned null every
+           * single time: a guard that shipped, was described in the README as
+           * working, and never once fired. The dead end it was written to
+           * explain went on happening for five milestones.
+           *
+           * That is the same mistake as the one the build refuses to emit — a
+           * classic script reaching for a node the parser has not created — made
+           * three commits after writing the check for it. Waiting for the parse
+           * makes the test independent of where either tag sits, so moving them
+           * around cannot quietly disarm it a second time.
+           */
+          addEventListener('DOMContentLoaded', function () {
+            if (location.protocol !== 'file:') return;
+            if (!document.querySelector('script[type="module"]')) return;
+            var boot = document.getElementById('boot');
+            if (!boot) return;
+            boot.innerHTML =
+              '<div class="boot-error">' +
+              '<p><strong>這是原始碼進入點，不能直接開啟。</strong></p>' +
+              '<p>它指向的是 TypeScript，需要開發伺服器即時轉譯。</p>' +
+              '<p>要直接離線遊玩，請開啟 <code>offline/index.html</code> — ' +
+              '那份是已建置好的版本，不需要伺服器。</p>' +
+              '<p>要開發，請執行 <code>npm run dev</code>。</p>' +
+              '</div>';
+          });
+        </script>
+        <!-- SOURCE-ONLY:end -->
+        <noscript>
+          <p class="boot-error">
+            「先鋒行動」需要JavaScript，請啟用後重新載入。
+          </p>
+        </noscript>
+      </div>
+    </div>
+    <script type="module" src="/src/client/main.ts"></script>
+  </body>
+</html>

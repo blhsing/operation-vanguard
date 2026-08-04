@@ -9,7 +9,7 @@ export const meta = {
 
 const CONTEXT = [
   'PROJECT: "Operation Vanguard" — a browser-native Call of Duty-style multiplayer FPS.',
-  'Repo root: D:/source/cod  (Windows, bash shell, forward slashes in TS imports)',
+  'Repo root: C:/src/operation-vanguard  (Windows, PowerShell; the web implementation lives under web/)',
   'Stack: TypeScript strict, Vite, Three.js (RENDER SIDE ONLY), Vitest. Node 24.',
   '',
   'HARD ARCHITECTURAL RULES — violating these breaks the build:',
@@ -380,10 +380,19 @@ const SPECS = [
   },
 ];
 
+// The original workflow was authored when the browser implementation occupied
+// the repository root. Keep its readable source-relative briefs above, but root
+// every actionable path in web/ before dispatching an agent.
+const ROOTED_SPECS = SPECS.map((spec) => ({
+  ...spec,
+  files: spec.files.replaceAll('src/', 'web/src/'),
+  prompt: spec.prompt.replaceAll('src/', 'web/src/'),
+}));
+
 phase('Build');
 
 const results = await pipeline(
-  SPECS,
+  ROOTED_SPECS,
   (spec) =>
     agent(
       CONTEXT +
@@ -391,7 +400,7 @@ const results = await pipeline(
         spec.files +
         '\nDo not create or edit any other file.\n\n' +
         spec.prompt +
-        '\n\nWhen done run: npx tsc --noEmit 2>&1 | head -40 and fix any error attributable to' +
+        '\n\nWhen done run: npm --prefix web run typecheck and fix any error attributable to' +
         " YOUR files. Errors in other agents' files are expected and not yours to fix." +
         '\nReport a one-paragraph summary of what you built and any balance decisions you made.',
       { label: 'build:' + spec.key, phase: 'Build' },
@@ -416,7 +425,7 @@ const results = await pipeline(
         ' sweepCapsule and confirm it cannot return fraction > 1 or loop forever. Attachments:' +
         ' confirm no attachment is strictly positive. Modes: confirm the numbers match the' +
         ' well-known rules.' +
-        '\n4. Run: npx tsc --noEmit 2>&1 | head -40 — fix every error in YOUR files.' +
+        '\n4. Run: npm --prefix web run typecheck — fix every error in YOUR files.' +
         '\n\nApply fixes directly with Edit/Write. Report what was wrong, what you fixed, and' +
         ' anything still outstanding. Be blunt — do not report success if the work is thin.',
       { label: 'review:' + spec.key, phase: 'Review' },
@@ -424,6 +433,6 @@ const results = await pipeline(
 );
 
 return {
-  built: SPECS.map((s) => s.key),
-  reviews: results.map((r, i) => ({ key: SPECS[i].key, report: r })),
+  built: ROOTED_SPECS.map((s) => s.key),
+  reviews: results.map((r, i) => ({ key: ROOTED_SPECS[i].key, report: r })),
 };

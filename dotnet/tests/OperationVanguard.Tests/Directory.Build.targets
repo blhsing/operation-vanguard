@@ -1,0 +1,8 @@
+<Project>
+  <!-- ZombiesSession is deliberately Raylib-free, so exercise the production
+       source in the Core test host without referencing the native executable. -->
+  <ItemGroup>
+    <Compile Include="../../src/OperationVanguard.Game/ZombiesSession.cs"
+             Link="Game/ZombiesSession.cs" />
+  </ItemGroup>
+</Project>

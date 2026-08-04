@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "OperationVanguard.Server": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "commandLineArgs": "--map crossfire --mode tdm --bots 6 --port 8790",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

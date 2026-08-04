@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0c0f" />
+    <meta
+      name="description"
+      content="先鋒行動 — 在瀏覽器中直接執行的決勝時刻風格第一人稱射擊遊戲。免下載、免外掛。"
+    />
+    <title>先鋒行動</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="./operation-vanguard-logo-192.png" />
+    <script src="./vanguard.js" defer></script>
+    <link rel="stylesheet" href="./vanguard.css">
+  </head>
+  <body>
+    <div id="app">
+      <!-- Boot screen. Replaced by the client once the engine is ready. -->
+      <div id="boot">
+        <div class="boot-mark">
+          <img class="boot-logo" src="./operation-vanguard-logo-192.png" alt="" />
+          <span class="boot-op">行動代號</span>
+          <span class="boot-title">先鋒</span>
+        </div>
+        <div class="boot-bar"><div class="boot-bar-fill" id="boot-progress"></div></div>
+        <div class="boot-status" id="boot-status">引擎初始化中&hellip;</div>
+        <noscript>
+          <p class="boot-error">
+            「先鋒行動」需要JavaScript，請啟用後重新載入。
+          </p>
+        </noscript>
+      </div>
+    </div>
+  </body>
+</html>

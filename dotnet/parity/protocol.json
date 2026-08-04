@@ -1,0 +1,403 @@
+{
+  "angles": [
+    {
+      "packed": 0,
+      "radians": -12.566370614359172,
+      "unpacked": 0
+    },
+    {
+      "packed": 32768,
+      "radians": -3.141592653589793,
+      "unpacked": 3.141592653589793
+    },
+    {
+      "packed": 65534,
+      "radians": -0.0001,
+      "unpacked": -0.00019174759848628042
+    },
+    {
+      "packed": 0,
+      "radians": 0,
+      "unpacked": 0
+    },
+    {
+      "packed": 32768,
+      "radians": 3.141592653589793,
+      "unpacked": 3.141592653589793
+    },
+    {
+      "packed": 0,
+      "radians": 6.283185307179586,
+      "unpacked": 0
+    },
+    {
+      "packed": 40960,
+      "radians": 29.059732045705587,
+      "unpacked": -2.356194490192345
+    }
+  ],
+  "control": {
+    "base64": "AWwAeyJwcm90b2NvbFZlcnNpb24iOjgsIm5hbWUiOiLlhYjpi5Ig8J+OriIsImxvYWRvdXQiOnsicHJpbWFyeSI6InZrNDciLCJhdHRhY2htZW50cyI6WyJyZWRfZG90IiwiZm9yZWdyaXAiXX19",
+    "payload": {
+      "loadout": {
+        "attachments": [
+          "red_dot",
+          "foregrip"
+        ],
+        "primary": "vk47"
+      },
+      "name": "先鋒 🎮",
+      "protocolVersion": 8
+    },
+    "type": 1
+  },
+  "events": {
+    "base64": "BkMCW3sidHlwZSI6ImhpdCIsInRpY2siOjE3LCJhdHRhY2tlciI6NywidmljdGltIjo5LCJsb2NhdGlvbiI6InVwcGVyQXJtIiwiZGFtYWdlIjozMy41LCJsZXRoYWwiOmZhbHNlLCJwb3NpdGlvbiI6eyJ4IjoxLjI1LCJ5IjoyLCJ6IjotMy41fSwid2VhcG9uSWQiOiJ2azQ3In0seyJ0eXBlIjoiZm9vdHN0ZXAiLCJ0aWNrIjoxOCwicGxheWVyIjo5LCJwb3NpdGlvbiI6eyJ4IjotNCwieSI6MC4xMjUsInoiOjYuNX0sInN1cmZhY2UiOjIsImxvdWQiOnRydWV9LHsidHlwZSI6ImRhbWFnZSIsInRpY2siOjE5LCJ2aWN0aW0iOjksImF0dGFja2VyIjo3LCJhbW91bnQiOjEyLjI1LCJkaXJlY3Rpb24iOnsieCI6MCwieSI6MC41LCJ6IjotMX0sImNhdXNlIjoxfSx7InR5cGUiOiJleHBsb3Npb24iLCJ0aWNrIjoyMCwicG9zaXRpb24iOnsieCI6OCwieSI6MSwieiI6LTJ9LCJyYWRpdXMiOjUuNSwib3duZXIiOjcsImtpbmQiOjB9LHsidHlwZSI6InJvdW5kX3N0YXJ0IiwidGljayI6MjEsInBsYXllciI6NywidGVhbSI6MSwicG9zaXRpb24iOnsieCI6MywieSI6MCwieiI6NH0sImRhdGEiOnsicm91bmQiOjIsInBoYXNlIjoyfX1d",
+    "value": [
+      {
+        "attacker": 7,
+        "damage": 33.5,
+        "lethal": false,
+        "location": "upperArm",
+        "position": {
+          "x": 1.25,
+          "y": 2,
+          "z": -3.5
+        },
+        "tick": 17,
+        "type": "hit",
+        "victim": 9,
+        "weaponId": "vk47"
+      },
+      {
+        "loud": true,
+        "player": 9,
+        "position": {
+          "x": -4,
+          "y": 0.125,
+          "z": 6.5
+        },
+        "surface": 2,
+        "tick": 18,
+        "type": "footstep"
+      },
+      {
+        "amount": 12.25,
+        "attacker": 7,
+        "cause": 1,
+        "direction": {
+          "x": 0,
+          "y": 0.5,
+          "z": -1
+        },
+        "tick": 19,
+        "type": "damage",
+        "victim": 9
+      },
+      {
+        "kind": 0,
+        "owner": 7,
+        "position": {
+          "x": 8,
+          "y": 1,
+          "z": -2
+        },
+        "radius": 5.5,
+        "tick": 20,
+        "type": "explosion"
+      },
+      {
+        "data": {
+          "phase": 2,
+          "round": 2
+        },
+        "player": 7,
+        "position": {
+          "x": 3,
+          "y": 0,
+          "z": 4
+        },
+        "team": 1,
+        "tick": 21,
+        "type": "round_start"
+      }
+    ]
+  },
+  "inputs": {
+    "base64": "BBDsAwAAkBMAAPHw8Dy2oCRJSyQMAASAAO0DAACSEwAAoQ7qPMSGbVteHQ8ABYAB7gMAAJQTAAA5juM80d22bXEWEgAGgADvAwAAlhMAAMln3TzfUwCAgw8VAAeAAfADAACYEwAANpTXPOx+SZKWCBgACIAA8QMAAJoTAAAhDdI8+TSSpKkBGwAJgAHyAwAAnBMAAM3MzDwHu9u2vPoeAAqAAPMDAACeEwAADM7HPBSBJMnP8yEAC4AB9AMAAKATAAAxDMM8Ibxt2+LsJAAMgAD1AwAAohMAAPqCvjwvNbbt9OUnAA2AAfYDAACkEwAAjC66PDx+AAAH3yoADoAA9wMAAKYTAABhC7Y8SlNJEhrYLQAPgAH4AwAAqBMAAEMWsjxX25IkLdEwABCAAPkDAACqEwAAQUyuPGSG2zZAyjMAEYAB+gMAAKwTAACrqqo8cqEkSVPDNgASgAD7AwAArhMAAAUvpzx/E21bZbw5ABOAAQ==",
+    "encodedCount": 16,
+    "source": [
+      {
+        "buttons": 2147483648,
+        "dt": 0.03333333333333333,
+        "moveForward": -1,
+        "moveRight": 0,
+        "pitch": 1.5707963267948966,
+        "seq": 1000,
+        "tick": 5000,
+        "weaponSlot": 0,
+        "yaw": -6.283185307179586
+      },
+      {
+        "buttons": 2147549187,
+        "dt": 0.03225806451612903,
+        "moveForward": -0.8947368421052632,
+        "moveRight": 0.8414709848078965,
+        "pitch": 1.4007963267948966,
+        "seq": 1001,
+        "tick": 5002,
+        "weaponSlot": 1,
+        "yaw": -5.834386356666759
+      },
+      {
+        "buttons": 2147614726,
+        "dt": 0.03125,
+        "moveForward": -0.7894736842105263,
+        "moveRight": 0.9092974268256817,
+        "pitch": 1.2307963267948965,
+        "seq": 1002,
+        "tick": 5004,
+        "weaponSlot": 0,
+        "yaw": -5.385587406153931
+      },
+      {
+        "buttons": 2147680265,
+        "dt": 0.030303030303030304,
+        "moveForward": -0.6842105263157895,
+        "moveRight": 0.1411200080598672,
+        "pitch": 1.0607963267948965,
+        "seq": 1003,
+        "tick": 5006,
+        "weaponSlot": 1,
+        "yaw": -4.9367884556411035
+      },
+      {
+        "buttons": 2147745804,
+        "dt": 0.029411764705882353,
+        "moveForward": -0.5789473684210527,
+        "moveRight": -0.7568024953079282,
+        "pitch": 0.8907963267948965,
+        "seq": 1004,
+        "tick": 5008,
+        "weaponSlot": 0,
+        "yaw": -4.487989505128276
+      },
+      {
+        "buttons": 2147811343,
+        "dt": 0.02857142857142857,
+        "moveForward": -0.47368421052631576,
+        "moveRight": -0.9589242746631385,
+        "pitch": 0.7207963267948965,
+        "seq": 1005,
+        "tick": 5010,
+        "weaponSlot": 1,
+        "yaw": -4.039190554615448
+      },
+      {
+        "buttons": 2147876882,
+        "dt": 0.027777777777777776,
+        "moveForward": -0.3684210526315789,
+        "moveRight": -0.27941549819892586,
+        "pitch": 0.5507963267948965,
+        "seq": 1006,
+        "tick": 5012,
+        "weaponSlot": 0,
+        "yaw": -3.5903916041026207
+      },
+      {
+        "buttons": 2147942421,
+        "dt": 0.02702702702702703,
+        "moveForward": -0.2631578947368421,
+        "moveRight": 0.6569865987187891,
+        "pitch": 0.3807963267948964,
+        "seq": 1007,
+        "tick": 5014,
+        "weaponSlot": 1,
+        "yaw": -3.141592653589793
+      },
+      {
+        "buttons": 2148007960,
+        "dt": 0.02631578947368421,
+        "moveForward": -0.15789473684210525,
+        "moveRight": 0.9893582466233818,
+        "pitch": 0.21079632679489646,
+        "seq": 1008,
+        "tick": 5016,
+        "weaponSlot": 0,
+        "yaw": -2.6927937030769655
+      },
+      {
+        "buttons": 2148073499,
+        "dt": 0.02564102564102564,
+        "moveForward": -0.05263157894736842,
+        "moveRight": 0.4121184852417566,
+        "pitch": 0.04079632679489653,
+        "seq": 1009,
+        "tick": 5018,
+        "weaponSlot": 1,
+        "yaw": -2.243994752564138
+      },
+      {
+        "buttons": 2148139038,
+        "dt": 0.025,
+        "moveForward": 0.05263157894736842,
+        "moveRight": -0.5440211108893698,
+        "pitch": -0.12920367320510362,
+        "seq": 1010,
+        "tick": 5020,
+        "weaponSlot": 0,
+        "yaw": -1.7951958020513104
+      },
+      {
+        "buttons": 2148204577,
+        "dt": 0.024390243902439025,
+        "moveForward": 0.15789473684210525,
+        "moveRight": -0.9999902065507035,
+        "pitch": -0.29920367320510355,
+        "seq": 1011,
+        "tick": 5022,
+        "weaponSlot": 1,
+        "yaw": -1.3463968515384837
+      },
+      {
+        "buttons": 2148270116,
+        "dt": 0.023809523809523808,
+        "moveForward": 0.2631578947368421,
+        "moveRight": -0.5365729180004349,
+        "pitch": -0.4692036732051035,
+        "seq": 1012,
+        "tick": 5024,
+        "weaponSlot": 0,
+        "yaw": -0.8975979010256552
+      },
+      {
+        "buttons": 2148335655,
+        "dt": 0.023255813953488372,
+        "moveForward": 0.3684210526315789,
+        "moveRight": 0.4201670368266409,
+        "pitch": -0.6392036732051034,
+        "seq": 1013,
+        "tick": 5026,
+        "weaponSlot": 1,
+        "yaw": -0.4487989505128267
+      },
+      {
+        "buttons": 2148401194,
+        "dt": 0.022727272727272728,
+        "moveForward": 0.47368421052631576,
+        "moveRight": 0.9906073556948704,
+        "pitch": -0.8092036732051038,
+        "seq": 1014,
+        "tick": 5028,
+        "weaponSlot": 0,
+        "yaw": 0
+      },
+      {
+        "buttons": 2148466733,
+        "dt": 0.022222222222222223,
+        "moveForward": 0.5789473684210527,
+        "moveRight": 0.6502878401571168,
+        "pitch": -0.9792036732051037,
+        "seq": 1015,
+        "tick": 5030,
+        "weaponSlot": 1,
+        "yaw": 0.4487989505128267
+      },
+      {
+        "buttons": 2148532272,
+        "dt": 0.021739130434782608,
+        "moveForward": 0.6842105263157895,
+        "moveRight": -0.2879033166650653,
+        "pitch": -1.1492036732051036,
+        "seq": 1016,
+        "tick": 5032,
+        "weaponSlot": 0,
+        "yaw": 0.8975979010256552
+      },
+      {
+        "buttons": 2148597811,
+        "dt": 0.02127659574468085,
+        "moveForward": 0.7894736842105263,
+        "moveRight": -0.9613974918795568,
+        "pitch": -1.3192036732051036,
+        "seq": 1017,
+        "tick": 5034,
+        "weaponSlot": 1,
+        "yaw": 1.3463968515384837
+      },
+      {
+        "buttons": 2148663350,
+        "dt": 0.020833333333333332,
+        "moveForward": 0.8947368421052632,
+        "moveRight": -0.7509872467716762,
+        "pitch": -1.4892036732051035,
+        "seq": 1018,
+        "tick": 5036,
+        "weaponSlot": 0,
+        "yaw": 1.7951958020513104
+      },
+      {
+        "buttons": 2148728889,
+        "dt": 0.02040816326530612,
+        "moveForward": 1,
+        "moveRight": 0.14987720966295234,
+        "pitch": -1.6592036732051039,
+        "seq": 1019,
+        "tick": 5038,
+        "weaponSlot": 1,
+        "yaw": 2.243994752564138
+      }
+    ]
+  },
+  "schemaVersion": 1,
+  "snapshot": {
+    "base64": "BZi63P4rUppE782riQIABwADAQADAABEQQAAAL4AACfCAABgQAAA6MAAAIA9ACCqKtkB0P//BAMCCAAAAL8AQMhCq6qqPgDwecQAAAAAAPB5RACAAIAAAH8=",
+    "value": {
+      "ackedInput": 2309737967,
+      "players": [
+        {
+          "alive": true,
+          "health": 217,
+          "id": 7,
+          "isBot": false,
+          "lean": -0.375,
+          "moveState": 3,
+          "onGround": true,
+          "pitch": 1.0471975511965976,
+          "stance": 0,
+          "team": 1,
+          "vx": 3.5,
+          "vy": -7.25,
+          "vz": 0.0625,
+          "weaponSlot": 1,
+          "x": 12.25,
+          "y": -0.125,
+          "yaw": -5.497787143782138,
+          "z": -41.75
+        },
+        {
+          "alive": false,
+          "health": 0,
+          "id": 65535,
+          "isBot": true,
+          "lean": 1,
+          "moveState": 8,
+          "onGround": false,
+          "pitch": -3.141592653589793,
+          "stance": 2,
+          "team": 3,
+          "vx": -999.75,
+          "vy": 0,
+          "vz": 999.75,
+          "weaponSlot": 0,
+          "x": -0.5,
+          "y": 100.125,
+          "yaw": 3.141592653589793,
+          "z": 0.3333333333333333
+        }
+      ],
+      "serverTime": 1234.5678,
+      "tick": 4275878552
+    }
+  }
+}

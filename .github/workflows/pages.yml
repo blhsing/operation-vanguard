@@ -18,21 +18,63 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
 
       - run: npm ci
 
       # Never publish a build that fails its own tests — the deployed page is the
       # only version most people will ever run.
       - run: npm run typecheck
+      - run: npm run check:i18n
+
+      - name: .NET parity fixtures are current
+        run: |
+          npm run export:dotnet
+          changes="$(git status --porcelain --untracked-files=all -- ../dotnet/parity ../dotnet/src/OperationVanguard.Core/Data)"
+          if [[ -n "$changes" ]]; then
+            echo "::error::.NET generated parity data is out of date — run 'npm run export:dotnet' from web/"
+            echo "$changes"
+            git diff --stat -- ../dotnet/parity ../dotnet/src/OperationVanguard.Core/Data/*Generated.cs
+            exit 1
+          fi
+
       - run: npm test
+
+      - name: Build and test native implementation
+        run: |
+          dotnet restore ../dotnet/OperationVanguard.sln
+          dotnet build ../dotnet/OperationVanguard.sln --configuration Release --no-restore
+          dotnet test ../dotnet/OperationVanguard.sln --configuration Release --no-build
+
+      - run: npm run verify:server
+
+      - name: Offline build and browser smoke test
+        run: |
+          npm run build:standalone
+          changes="$(git status --porcelain --untracked-files=all -- offline)"
+          if [[ -n "$changes" ]]; then
+            echo "::error::web/offline/ is out of date — run 'npm run build:standalone' from web/"
+            echo "$changes"
+            git diff --stat -- offline
+            exit 1
+          fi
+          google-chrome --version
+          npm run verify:standalone
 
       - name: Build for Pages
         # Pages serves the site from /<repo>/, so assets need that prefix.
@@ -49,7 +91,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: web/dist
 
   deploy:
     needs: build
